@@ -7,16 +7,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus { ACTIVE SUSPENDED DISABLED }
-enum OfficeType { HEADQUARTERS REGION DISTRICT CITY LOCAL INTERNATIONAL_COUNTRY INTERNATIONAL_CITY }
-enum PersonStatus { PENDING ACTIVE INACTIVE REJECTED }
-enum DonationStatus { PENDING CONFIRMED FAILED REFUNDED REVIEW }
-enum CampaignStatus { DRAFT PENDING_APPROVAL ACTIVE PAUSED CLOSED REJECTED }
-enum TaskStatus { TODO IN_PROGRESS BLOCKED DONE }
-enum EventStatus { DRAFT PUBLISHED CANCELLED COMPLETED }
-enum ApprovalStatus { PENDING APPROVED REJECTED }
-enum LedgerType { INCOME EXPENSE TRANSFER }
-enum ConsentType { NEWS EVENTS FUNDRAISING VOLUNTEERING ELECTION_INFORMATION }
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum OfficeType {
+  HEADQUARTERS
+  REGION
+  DISTRICT
+  CITY
+  LOCAL
+  INTERNATIONAL_COUNTRY
+  INTERNATIONAL_CITY
+}
+
+enum PersonStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  REJECTED
+}
+
+enum DonationStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+  REVIEW
+}
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  PAUSED
+  CLOSED
+  REJECTED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LedgerType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum ConsentType {
+  NEWS
+  EVENTS
+  FUNDRAISING
+  VOLUNTEERING
+  ELECTION_INFORMATION
+}
 
 model User {
   id           String       @id @default(cuid())
