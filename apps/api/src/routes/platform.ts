@@ -15,7 +15,7 @@ const r = Router();
 r.get(
   '/approvals/inbox',
   auth,
-  permit('fundraising.read'),
+  permit('members.read'),
   asyncHandler(async (req, res) => {
     const approvals = await prisma.approval.findMany({
       where: { status: 'PENDING' },

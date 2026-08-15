@@ -50,6 +50,9 @@ const rolePermissions: Record<string, string[]> = {
     'events.read',
     'events.write',
     'communications.read',
+    'communications.write',
+    'fundraising.read',
+    'security.read',
   ],
   FINANCE_OFFICER: [
     'organisation.read',
