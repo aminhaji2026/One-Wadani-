@@ -1,6 +1,7 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import EventBanner from './EventBanner';
+import NavPolls from './NavPolls';
 
 export default function SiteShell() {
   const [scrolled, setScrolled] = useState(false);
@@ -22,10 +23,13 @@ export default function SiteShell() {
         <EventBanner />
         <header className="siteNav">
           <div className="siteNavInner">
-            <Link to="/" className="siteBrand" aria-label="Waddani home">
-              <img src="/waddani-mark.svg" alt="" width={40} height={40} />
-              <span>WADDANI</span>
-            </Link>
+            <div className="siteNavLead">
+              <Link to="/" className="siteBrand" aria-label="Waddani home">
+                <img src="/waddani-mark.svg" alt="" width={40} height={40} />
+                <span>WADDANI</span>
+              </Link>
+              <NavPolls />
+            </div>
             <button
               className="navToggle"
               type="button"
@@ -37,6 +41,7 @@ export default function SiteShell() {
               <span />
             </button>
             <nav className={open ? 'is-open' : ''} onClick={() => setOpen(false)}>
+              <Link to="/polls">Polls</Link>
               <a href="/#action">Take action</a>
               <a href="/#plan">Our plan</a>
               <a href="/#news">News</a>

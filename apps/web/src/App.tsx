@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Join from './pages/Join';
 import Donate from './pages/Donate';
+import Polls from './pages/Polls';
 import { ModulePage, PeoplePage, AnalyticsPage } from './pages/ModulePage';
 
 function isAuthed() {
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/join" element={<Join />} />
         <Route path="/donate" element={<Donate />} />
+        <Route path="/polls" element={<Polls />} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/console/*" element={<ConsoleRoutes />} />
