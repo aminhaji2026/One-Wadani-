@@ -7,6 +7,9 @@ type Campaign = {
   id: string;
   title: string;
   description: string;
+  message?: string | null;
+  imageUrl?: string | null;
+  slug?: string | null;
   targetAmount: string | number;
   raisedAmount: string | number;
   currency: string;
@@ -57,10 +60,13 @@ export function SupporterCampaigns() {
               const pct = Math.min(100, Math.round((raised / target) * 100));
               return (
                 <div className="campaignRow" key={c.id}>
+                  {c.imageUrl && (
+                    <div className="campaignThumb" style={{ backgroundImage: `url(${c.imageUrl})` }} aria-hidden="true" />
+                  )}
                   <div className="campaignRowHead">
                     <div>
                       <strong>{c.title}</strong>
-                      <div className="mutedLine">{c.description}</div>
+                      <div className="mutedLine">{c.message || c.description}</div>
                     </div>
                     <span>
                       {pct}% · {c.currency} {raised.toLocaleString()} / {target.toLocaleString()}
@@ -71,6 +77,11 @@ export function SupporterCampaigns() {
                     <Link className="primary actionLink" to={`/give?campaign=${c.id}`}>
                       Support this campaign
                     </Link>
+                    {c.slug && (
+                      <a className="secondaryBtn actionLink" href={`/c/${c.slug}`} target="_blank" rel="noreferrer">
+                        Open public page
+                      </a>
+                    )}
                   </div>
                 </div>
               );

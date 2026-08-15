@@ -52,6 +52,7 @@ const rolePermissions: Record<string, string[]> = {
     'communications.read',
     'communications.write',
     'fundraising.read',
+    'fundraising.write',
     'security.read',
   ],
   FINANCE_OFFICER: [
@@ -260,6 +261,11 @@ async function main() {
     });
   }
 
+  const campaignBanner =
+    'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80';
+  const campaignMessage =
+    'Together we fund community programmes, youth leadership, and diaspora solidarity across Somaliland. Every gift — ZAAD, eDahab, Premier, MyCash, Sifalo, or card — moves the national mission forward.';
+
   const existingCampaign = await prisma.fundraisingCampaign.findFirst({
     where: { title: 'National Solidarity Fund' },
   });
@@ -269,16 +275,22 @@ async function main() {
         title: 'National Solidarity Fund',
         slug: 'national-solidarity-fund',
         description: 'Support Waddani community programmes across Somaliland and the diaspora.',
+        message: campaignMessage,
+        imageUrl: campaignBanner,
         targetAmount: 25000,
         currency: 'USD',
         status: 'ACTIVE',
         officeId: hq.id,
       },
     });
-  } else if (!existingCampaign.slug) {
+  } else {
     await prisma.fundraisingCampaign.update({
       where: { id: existingCampaign.id },
-      data: { slug: 'national-solidarity-fund' },
+      data: {
+        slug: existingCampaign.slug || 'national-solidarity-fund',
+        ...(!existingCampaign.imageUrl ? { imageUrl: campaignBanner } : {}),
+        ...(!existingCampaign.message ? { message: campaignMessage } : {}),
+      },
     });
   }
 

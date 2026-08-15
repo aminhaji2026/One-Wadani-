@@ -9,6 +9,8 @@ type Campaign = {
   id: string;
   title: string;
   description: string;
+  message?: string | null;
+  imageUrl?: string | null;
   targetAmount: string | number;
   raisedAmount: string | number;
   currency: string;
@@ -85,7 +87,7 @@ export default function PublicCampaignPage() {
   const pct = Math.min(100, Math.round((raised / target) * 100));
 
   return (
-    <div className="portalShell">
+    <div className="portalShell publicCampaignPage">
       <header className="portalHeader">
         <div className="portalBrand">
           <BrandLogo variant="mark" />
@@ -98,21 +100,40 @@ export default function PublicCampaignPage() {
           Sign in
         </Link>
       </header>
+
+      {campaign?.imageUrl && (
+        <div className="campaignBanner" style={{ backgroundImage: `url(${campaign.imageUrl})` }} role="img" aria-label={campaign.title}>
+          <div className="campaignBannerShade">
+            <p className="eyebrow">Waddani fundraising</p>
+            <h1>{campaign.title}</h1>
+            <p>{campaign.description}</p>
+          </div>
+        </div>
+      )}
+
       <main className="portalMain">
         {error && <div className="error">{error}</div>}
         {!campaign && !error && <div className="loading">Loading campaign…</div>}
         {campaign && (
           <>
-            <section className="heroBand">
-              <div className="eyebrow">Fundraising</div>
-              <h2>{campaign.title}</h2>
-              <p>{campaign.description}</p>
-            </section>
+            {!campaign.imageUrl && (
+              <section className="heroBand">
+                <div className="eyebrow">Fundraising</div>
+                <h2>{campaign.title}</h2>
+                <p>{campaign.description}</p>
+              </section>
+            )}
+
+            {campaign.message ? (
+              <section className="campaignMessage">
+                <h2>Campaign message</h2>
+                <p>{campaign.message}</p>
+              </section>
+            ) : null}
+
             <div className="card">
               <div className="campaignRowHead">
-                <strong>
-                  {pct}% raised
-                </strong>
+                <strong>{pct}% raised</strong>
                 <span>
                   {campaign.currency} {raised.toLocaleString()} / {target.toLocaleString()}
                 </span>
