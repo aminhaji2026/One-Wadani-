@@ -1,7 +1,7 @@
 :root {
-  --orange: #e85a17;
-  --orange-deep: #c2410c;
-  --orange-hot: #ff6b2d;
+  --orange: #ff6600;
+  --orange-deep: #d45500;
+  --orange-hot: #ff7a1a;
   --ink: #1b120c;
   --ink-soft: #4a3a31;
   --paper: #fff7f1;
@@ -220,16 +220,54 @@ select {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 28px;
-  letter-spacing: 0.04em;
+  color: inherit;
   line-height: 1;
   flex-shrink: 0;
 }
 
+.brandEmblem {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(232, 90, 23, 0.25);
+  flex-shrink: 0;
+}
+
+.brandText {
+  display: grid;
+  gap: 3px;
+}
+
+.brandText b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.brandText small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  opacity: 0.9;
+}
+
+.footerBrand .brandText small {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footerBrand .brandEmblem {
+  width: 44px;
+  height: 44px;
+}
+
 .siteBrand img {
-  border-radius: 10px;
+  display: block;
 }
 
 /* ——— Nav polls ——— */
@@ -1071,30 +1109,22 @@ select {
   left: 40px;
   bottom: 48px;
   z-index: 1;
+  max-width: min(360px, 80%);
 }
 
-.loginBrandBlock p {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.loginBrandBlock strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: clamp(56px, 8vw, 96px);
-  line-height: 0.9;
-  letter-spacing: 0.02em;
+.loginBrandBlock .loginLockup {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  margin-bottom: 12px;
 }
 
 .loginBrandBlock span {
   display: block;
-  margin-top: 8px;
   opacity: 0.85;
+  font-weight: 700;
 }
-
 .loginPanel {
   display: grid;
   place-items: center;
@@ -1207,12 +1237,20 @@ aside {
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 10px;
+  border-radius: 50%;
   background: var(--orange);
   color: white;
   font-weight: 900;
   font-size: 22px;
   font-family: var(--font-display);
+}
+
+aside .brandEmblem {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
 }
 
 aside nav {
@@ -1504,8 +1542,18 @@ td {
     gap: 8px;
   }
 
-  .siteBrand span {
+  .siteBrand span,
+  .brandText b {
     font-size: 22px;
+  }
+
+  .brandText small {
+    display: none;
+  }
+
+  .brandEmblem {
+    width: 42px;
+    height: 42px;
   }
 
   .navPolls {

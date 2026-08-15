@@ -14,8 +14,7 @@ export default function Login() {
         <img src="/hero.png" alt="" />
         <div className="loginShade" />
         <div className="loginBrandBlock">
-          <p>We are</p>
-          <strong>WADDANI</strong>
+          <img className="loginLockup" src="/waddani-lockup.jpg" alt="Xisbiga Waddani — Somaliland National Party" />
           <span>Staff operations console</span>
         </div>
       </div>
@@ -24,7 +23,7 @@ export default function Login() {
           ← Public site
         </Link>
         <div className="loginCard">
-          <img src="/waddani-mark.svg" alt="" width={48} height={48} />
+          <img className="brandEmblem" src="/waddani-emblem.png" alt="Xisbiga Waddani" width={64} height={64} />
           <h1>Sign in</h1>
           <p>Authorised staff, officials, and organisers only.</p>
           <label>

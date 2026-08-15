@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <div className="shell">
       <aside>
         <Link to="/" className="brand">
-          <img src="/waddani-mark.svg" alt="" width={42} height={42} />
+          <img className="brandEmblem" src="/waddani-emblem-nav.png" alt="Xisbiga Waddani" width={46} height={46} />
           <div>
             <b>WADDANI ONE</b>
             <small>Party Operations Platform</small>

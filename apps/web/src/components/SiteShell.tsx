@@ -25,8 +25,11 @@ export default function SiteShell() {
           <div className="siteNavInner">
             <div className="siteNavLead">
               <Link to="/" className="siteBrand" aria-label="Waddani home">
-                <img src="/waddani-mark.svg" alt="" width={40} height={40} />
-                <span>WADDANI</span>
+                <img className="brandEmblem" src="/waddani-emblem-nav.png" alt="Xisbiga Waddani" width={48} height={48} />
+                <span className="brandText">
+                  <b>WADDANI</b>
+                  <small>Somaliland National Party</small>
+                </span>
               </Link>
               <NavPolls />
             </div>
@@ -63,8 +66,11 @@ export default function SiteShell() {
         <div className="siteFooterInner">
           <div>
             <div className="siteBrand footerBrand">
-              <img src="/waddani-mark.svg" alt="" width={36} height={36} />
-              <span>WADDANI</span>
+              <img className="brandEmblem" src="/waddani-emblem.png" alt="Xisbiga Waddani" width={44} height={44} />
+              <span className="brandText">
+                <b>WADDANI</b>
+                <small>Somaliland National Party</small>
+              </span>
             </div>
             <p>The Somaliland National Party — organising for dignity, opportunity, and democratic accountability.</p>
           </div>
