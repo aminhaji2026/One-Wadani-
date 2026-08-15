@@ -112,6 +112,7 @@ select {
 
 .siteNav nav {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
 }
@@ -861,7 +862,7 @@ aside {
   font-family: var(--font-display);
 }
 
-nav {
+aside nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
