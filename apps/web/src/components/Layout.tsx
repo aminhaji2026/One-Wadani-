@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useState, type ReactNode } from 'react';
 import { clearSession, getStoredUser } from '../lib/api';
+import BrandLogo from './BrandLogo';
 
 const items: [string, string][] = [
   ['/', 'Command Centre'],
@@ -24,10 +25,10 @@ export default function Layout({ children }: { children: ReactNode }) {
     <div className="shell">
       <aside className={open ? 'open' : ''}>
         <div className="brand">
-          <span>W</span>
+          <BrandLogo variant="mark" />
           <div>
             <b>WADDANI ONE</b>
-            <small>Party Operations Platform</small>
+            <small>Xisbiga Waddani</small>
           </div>
         </div>
         <nav onClick={() => setOpen(false)}>
@@ -58,7 +59,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </button>
             <div>
               <h1>Waddani Management System</h1>
-              <p>Secure global party operations, membership, fundraising and communications</p>
+              <p>Somaliland National Party operations, membership, fundraising and communications</p>
             </div>
           </div>
           <div className="badge">HQ Console</div>

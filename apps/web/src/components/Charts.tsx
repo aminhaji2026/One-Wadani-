@@ -7,11 +7,11 @@ export function CountryBarChart({ data }: { data: { country: string; count: numb
     <div className="chartBox">
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5ece8" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0d8c4" />
           <XAxis dataKey="country" tick={{ fontSize: 11 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip />
-          <Bar dataKey="count" fill="#168a59" radius={[6, 6, 0, 0]} />
+          <Bar dataKey="count" fill="#ff6600" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { changePassword } from '../lib/api';
+import BrandLogo from '../components/BrandLogo';
 
 export default function ChangePassword({ onDone }: { onDone: () => void }) {
   const [currentPassword, setCurrent] = useState('');
@@ -33,27 +34,29 @@ export default function ChangePassword({ onDone }: { onDone: () => void }) {
   return (
     <div className="login">
       <div className="loginAtmosphere" aria-hidden="true" />
-      <form className="loginCard" onSubmit={onSubmit}>
-        <div className="logoCircle">W</div>
-        <h1>Change password</h1>
-        <p>For security, update the seeded or temporary password before continuing.</p>
-        <label>
-          <span>Current password</span>
-          <input type="password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
-        </label>
-        <label>
-          <span>New password</span>
-          <input type="password" value={newPassword} onChange={(e) => setNew(e.target.value)} required minLength={10} />
-        </label>
-        <label>
-          <span>Confirm new password</span>
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={10} />
-        </label>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Saving…' : 'Update password'}
-        </button>
-        {error && <div className="error">{error}</div>}
-      </form>
+      <div className="loginStage">
+        <BrandLogo />
+        <form className="loginCard" onSubmit={onSubmit}>
+          <h1>Change password</h1>
+          <p>For security, update the seeded or temporary password before continuing.</p>
+          <label>
+            <span>Current password</span>
+            <input type="password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
+          </label>
+          <label>
+            <span>New password</span>
+            <input type="password" value={newPassword} onChange={(e) => setNew(e.target.value)} required minLength={10} />
+          </label>
+          <label>
+            <span>Confirm new password</span>
+            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={10} />
+          </label>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Saving…' : 'Update password'}
+          </button>
+          {error && <div className="error">{error}</div>}
+        </form>
+      </div>
     </div>
   );
 }
