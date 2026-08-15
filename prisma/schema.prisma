@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum OfficeType {
+  HEADQUARTERS
+  REGION
+  DISTRICT
+  CITY
+  LOCAL
+  INTERNATIONAL_COUNTRY
+  INTERNATIONAL_CITY
+}
+
+enum PersonStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  REJECTED
+}
+
+enum DonationStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+  REVIEW
+}
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  PAUSED
+  CLOSED
+  REJECTED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LedgerType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum ConsentType {
+  NEWS
+  EVENTS
+  FUNDRAISING
+  VOLUNTEERING
+  ELECTION_INFORMATION
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  status       UserStatus   @default(ACTIVE)
+  firstName    String
+  lastName     String
+  phone        String?
+  locale       String       @default("so")
+  officeId     String?
+  office       Office?      @relation(fields: [officeId], references: [id])
+  roles        UserRole[]
+  staff        Staff?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  auditLogs    AuditLog[]   @relation("ActorAuditLogs")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model Office {
+  id        String     @id @default(cuid())
+  name      String
+  type      OfficeType
+  country   String
+  region    String?
+  city      String?
+  address   String?
+  parentId  String?
+  parent    Office?    @relation("OfficeTree", fields: [parentId], references: [id])
+  children  Office[]   @relation("OfficeTree")
+  active    Boolean    @default(true)
+  users     User[]
+  members   Member[]
+  supporters Supporter[]
+  staff     Staff[]
+  volunteers Volunteer[]
+  events    Event[]
+  budgets   Budget[]
+  expenses  Expense[]
+  tasks     Task[]
+  campaigns FundraisingCampaign[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Member {
+  id             String       @id @default(cuid())
+  membershipNo   String       @unique
+  firstName      String
+  lastName       String
+  phone          String?
+  email          String?
+  country        String
+  city           String?
+  dateOfBirth    DateTime?
+  gender         String?
+  preferredLanguage String    @default("so")
+  membershipType String       @default("Standard")
+  status         PersonStatus @default(PENDING)
+  photoUrl       String?
+  joinedAt       DateTime?
+  officeId       String?
+  office         Office?      @relation(fields: [officeId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Supporter {
+  id        String       @id @default(cuid())
+  firstName String
+  lastName  String?
+  phone     String?
+  email     String?
+  country   String
+  city      String?
+  language  String       @default("so")
+  status    PersonStatus @default(ACTIVE)
+  officeId  String?
+  office    Office?      @relation(fields: [officeId], references: [id])
+  consents  Consent[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Consent {
+  id          String      @id @default(cuid())
+  supporterId String
+  type        ConsentType
+  granted     Boolean     @default(true)
+  source      String      @default("app")
+  grantedAt   DateTime    @default(now())
+  revokedAt   DateTime?
+  supporter   Supporter   @relation(fields: [supporterId], references: [id], onDelete: Cascade)
+  @@unique([supporterId, type])
+}
+
+model Staff {
+  id        String       @id @default(cuid())
+  staffNo   String       @unique
+  userId    String       @unique
+  officeId  String?
+  title     String
+  department String
+  managerId String?
+  startDate DateTime     @default(now())
+  endDate   DateTime?
+  status    PersonStatus @default(ACTIVE)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  office    Office?      @relation(fields: [officeId], references: [id])
+  manager   Staff?       @relation("StaffManager", fields: [managerId], references: [id])
+  reports   Staff[]      @relation("StaffManager")
+}
+
+model Volunteer {
+  id        String       @id @default(cuid())
+  firstName String
+  lastName  String?
+  phone     String?
+  email     String?
+  skills    String[]
+  status    PersonStatus @default(ACTIVE)
+  officeId  String?
+  office    Office?      @relation(fields: [officeId], references: [id])
+  createdAt DateTime     @default(now())
+}
+
+model FundraisingCampaign {
+  id          String         @id @default(cuid())
+  title       String
+  description String
+  targetAmount Decimal       @db.Decimal(18,2)
+  currency    String         @default("USD")
+  raisedAmount Decimal       @default(0) @db.Decimal(18,2)
+  status      CampaignStatus @default(DRAFT)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  imageUrl    String?
+  videoUrl    String?
+  officeId    String?
+  office      Office?        @relation(fields: [officeId], references: [id])
+  donations   Donation[]
+  approvals   Approval[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Donation {
+  id          String         @id @default(cuid())
+  receiptNo   String         @unique
+  campaignId  String
+  donorName   String?
+  donorEmail  String?
+  donorPhone  String?
+  donorCountry String?
+  amount      Decimal        @db.Decimal(18,2)
+  currency    String         @default("USD")
+  gateway     String
+  providerRef String?
+  status      DonationStatus @default(PENDING)
+  recurring   Boolean        @default(false)
+  complianceNote String?
+  campaign    FundraisingCampaign @relation(fields: [campaignId], references: [id])
+  payment     PaymentTransaction?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model PaymentTransaction {
+  id          String   @id @default(cuid())
+  donationId  String   @unique
+  gateway     String
+  externalRef String?
+  amount      Decimal  @db.Decimal(18,2)
+  currency    String
+  rawStatus   String?
+  verified    Boolean  @default(false)
+  verifiedAt  DateTime?
+  donation    Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  officeId  String
+  name      String
+  year      Int
+  amount    Decimal  @db.Decimal(18,2)
+  currency  String   @default("USD")
+  office    Office   @relation(fields: [officeId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Expense {
+  id          String         @id @default(cuid())
+  officeId    String
+  category    String
+  description String
+  amount      Decimal        @db.Decimal(18,2)
+  currency    String         @default("USD")
+  status      ApprovalStatus @default(PENDING)
+  incurredAt  DateTime       @default(now())
+  office      Office         @relation(fields: [officeId], references: [id])
+  approvals   Approval[]
+  ledgerEntry LedgerEntry?
+  createdAt   DateTime       @default(now())
+}
+
+model LedgerEntry {
+  id          String     @id @default(cuid())
+  type        LedgerType
+  amount      Decimal    @db.Decimal(18,2)
+  currency    String
+  account     String
+  reference   String
+  description String
+  expenseId   String?    @unique
+  expense     Expense?   @relation(fields: [expenseId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  title       String
+  type        String
+  url         String
+  language    String   @default("so")
+  approved    Boolean  @default(false)
+  published   Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+}
+
+model CommunicationCampaign {
+  id          String         @id @default(cuid())
+  title       String
+  channel     String
+  audience    String
+  message     String
+  status      CampaignStatus @default(DRAFT)
+  scheduledAt DateTime?
+  createdById String?
+  approvals   Approval[]
+  createdAt   DateTime       @default(now())
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  venue       String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  capacity    Int?
+  status      EventStatus @default(DRAFT)
+  officeId    String?
+  office      Office?     @relation(fields: [officeId], references: [id])
+  attendees   EventAttendee[]
+  createdAt   DateTime    @default(now())
+}
+
+model EventAttendee {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  phone     String?
+  email     String?
+  qrToken   String   @unique
+  checkedIn Boolean  @default(false)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    String     @default("normal")
+  dueAt       DateTime?
+  assigneeId  String?
+  officeId    String?
+  office      Office?    @relation(fields: [officeId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Approval {
+  id          String         @id @default(cuid())
+  entityType  String
+  entityId    String
+  status      ApprovalStatus @default(PENDING)
+  requestedBy String?
+  decidedBy   String?
+  comment     String?
+  decidedAt   DateTime?
+  fundraisingCampaignId String?
+  fundraisingCampaign FundraisingCampaign? @relation(fields: [fundraisingCampaignId], references: [id])
+  expenseId   String?
+  expense     Expense?       @relation(fields: [expenseId], references: [id])
+  communicationCampaignId String?
+  communicationCampaign CommunicationCampaign? @relation(fields: [communicationCampaignId], references: [id])
+  createdAt   DateTime       @default(now())
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  url         String
+  confidential Boolean @default(false)
+  officeId    String?
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  ip        String?
+  userAgent String?
+  oldValue  Json?
+  newValue  Json?
+  createdAt DateTime @default(now())
+  actor     User?    @relation("ActorAuditLogs", fields: [actorId], references: [id])
+}
+
+model PrivacyRequest {
+  id        String   @id @default(cuid())
+  subjectType String
+  subjectId String
+  type      String
+  status    String   @default("OPEN")
+  notes     String?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  location    String?
+  officeId    String?
+  attendees   Json?
+  minutesUrl  String?
+  createdAt   DateTime @default(now())
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  name      String?
+  type      String   @default("GROUP")
+  officeId  String?
+  members   ConversationMember[]
+  messages  Message[]
+  createdAt DateTime @default(now())
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  role           String   @default("MEMBER")
+  joinedAt       DateTime @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@id([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  kind           String   @default("TEXT")
+  body           String?
+  attachmentUrl  String?
+  createdAt      DateTime @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
