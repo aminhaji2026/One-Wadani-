@@ -1,5 +1,9 @@
 #!/bin/sh
 set -e
-echo "Waiting for database and applying migrations..."
+echo "Applying Prisma migrations..."
 npx prisma migrate deploy --schema prisma/schema.prisma
-exec node dist/index.js
+if [ "${RUN_SEED:-false}" = "true" ]; then
+  echo "Seeding database..."
+  npx tsx scripts/seed.ts || echo "Seed skipped/failed"
+fi
+exec node apps/api/dist/index.js
