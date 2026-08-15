@@ -1,5 +1,16 @@
 const BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? '/api' : 'http://localhost:4000/api');
 
+export type PortalKind = 'staff' | 'member' | 'supporter' | 'volunteer';
+
+export type StoredUser = {
+  id?: string;
+  name?: string;
+  email?: string | null;
+  portal?: PortalKind;
+  mustChangePassword?: boolean;
+  officeId?: string | null;
+};
+
 export const getToken = () => localStorage.getItem('waddani_token');
 
 export function clearSession() {
@@ -7,7 +18,7 @@ export function clearSession() {
   localStorage.removeItem('waddani_user');
 }
 
-export function getStoredUser(): { name?: string; mustChangePassword?: boolean } | null {
+export function getStoredUser(): StoredUser | null {
   try {
     const raw = localStorage.getItem('waddani_user');
     return raw ? JSON.parse(raw) : null;
@@ -45,10 +56,10 @@ export async function api(path: string, options: RequestInit = {}) {
   return data;
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, portal: PortalKind = 'staff') {
   const data = await api('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, portal }),
   });
   localStorage.setItem('waddani_token', data.token);
   localStorage.setItem('waddani_user', JSON.stringify(data.user));

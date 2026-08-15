@@ -2,12 +2,18 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { auth, permit, type AuthRequest } from '../middleware/auth.js';
-import { getGateway } from '../services/payments.js';
+import { getGateway, listGateways } from '../services/payments.js';
 import { audit } from '../services/audit.js';
 import { asyncHandler, officeScope, param, parseLimit } from '../lib/helpers.js';
 import { nextReceiptNo } from '../lib/ids.js';
 
 const r = Router();
+
+const gatewayEnum = z.enum(['mock', 'zaad', 'edahab', 'premier', 'mycash', 'sifalo', 'stripe']);
+
+r.get('/payments/gateways', (_req, res) => {
+  res.json({ gateways: listGateways() });
+});
 
 r.post(
   '/donations',
@@ -17,12 +23,13 @@ r.post(
         campaignId: z.string().min(1),
         amount: z.coerce.number().positive().max(1_000_000),
         currency: z.string().default('USD'),
-        gateway: z.enum(['mock', 'zaad']).default('mock'),
+        gateway: gatewayEnum.default('mock'),
         donorName: z.string().optional(),
         donorEmail: z.string().email().optional(),
         donorPhone: z.string().optional(),
         donorCountry: z.string().optional(),
         recurring: z.boolean().default(false),
+        returnUrl: z.string().url().optional(),
       })
       .parse(req.body);
 
@@ -54,6 +61,10 @@ r.post(
       currency: p.currency,
       reference: donation.id,
       customerPhone: p.donorPhone,
+      customerEmail: p.donorEmail,
+      customerName: p.donorName,
+      returnUrl: p.returnUrl,
+      description: `Donation to ${campaign.title}`,
     });
 
     await prisma.paymentTransaction.create({
@@ -86,7 +97,7 @@ r.post(
             currency: p.currency,
             account: 'Fundraising',
             reference: receiptNo,
-            description: `Donation to campaign ${p.campaignId}`,
+            description: `Donation to campaign ${p.campaignId} via ${p.gateway}`,
           },
         }),
       ]);
@@ -96,7 +107,10 @@ r.post(
       donationId: donation.id,
       receiptNo,
       status: result.status,
+      gateway: p.gateway,
       checkoutUrl: result.checkoutUrl,
+      instructions: result.instructions,
+      providerRef: result.providerRef,
     });
   }),
 );
@@ -104,8 +118,12 @@ r.post(
 r.post(
   '/webhooks/:gateway',
   asyncHandler(async (req, res) => {
-    const gateway = getGateway(param(req.params.gateway));
-    const verified = await gateway.verifyWebhook(req.body, req.headers['x-signature'] as string | undefined);
+    const gatewayName = param(req.params.gateway);
+    const gateway = getGateway(gatewayName);
+    const signature =
+      (req.headers['x-signature'] as string | undefined) ||
+      (req.headers['stripe-signature'] as string | undefined);
+    const verified = await gateway.verifyWebhook(req.body, signature);
     const payment = await prisma.paymentTransaction.findFirst({
       where: { externalRef: verified.providerRef },
       include: { donation: true },
@@ -133,7 +151,7 @@ r.post(
             currency: payment.currency,
             account: 'Fundraising',
             reference: payment.donation.receiptNo,
-            description: `Verified donation ${payment.donation.receiptNo}`,
+            description: `Verified donation ${payment.donation.receiptNo} via ${gatewayName}`,
           },
         }),
       ]);

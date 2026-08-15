@@ -19,25 +19,37 @@ type Donation = {
   amount: string | number;
   currency: string;
   status: string;
+  gateway?: string;
   donorName?: string | null;
   donorCountry?: string | null;
   createdAt: string;
   campaign?: { title?: string } | null;
 };
 
+type Gateway = { id: string; label: string; configured: boolean; demoMode: boolean };
+
 export default function FundraisingPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [gateways, setGateways] = useState<Gateway[]>([]);
   const [open, setOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [donate, setDonate] = useState<Record<string, string>>({ gateway: 'zaad', currency: 'USD' });
   const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     try {
-      const [c, d] = await Promise.all([api('/fundraising'), api('/donations')]);
+      const [c, d, g] = await Promise.all([
+        api('/fundraising'),
+        api('/donations'),
+        api('/payments/gateways'),
+      ]);
       setCampaigns(c);
       setDonations(d);
+      setGateways(g.gateways || []);
       setErr('');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed to load fundraising data');
@@ -71,17 +83,130 @@ export default function FundraisingPage() {
     }
   };
 
+  const submitDonation = async () => {
+    setSaving(true);
+    setErr('');
+    setInfo('');
+    try {
+      const result = await api('/donations', {
+        method: 'POST',
+        body: JSON.stringify({
+          campaignId: donate.campaignId,
+          amount: Number(donate.amount),
+          currency: donate.currency || 'USD',
+          gateway: donate.gateway || 'zaad',
+          donorName: donate.donorName,
+          donorEmail: donate.donorEmail,
+          donorPhone: donate.donorPhone,
+          donorCountry: donate.donorCountry,
+          returnUrl: window.location.href,
+        }),
+      });
+      setInfo(
+        [
+          `Donation ${result.receiptNo} created via ${result.gateway} (${result.status}).`,
+          result.instructions,
+          result.checkoutUrl ? `Checkout: ${result.checkoutUrl}` : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+      );
+      if (result.checkoutUrl) window.open(result.checkoutUrl, '_blank', 'noopener,noreferrer');
+      setDonateOpen(false);
+      setDonate({ gateway: donate.gateway || 'zaad', currency: 'USD' });
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Donation failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const activeCampaigns = campaigns.filter((c) => c.status === 'ACTIVE');
+
   return (
     <>
       <div className="pageTitle">
         <div>
           <h2>Fundraising & Donations</h2>
-          <p>Campaign creation, approvals, payments and reconciliation.</p>
+          <p>Campaigns plus ZAAD, eDahab, Premier, MyCash, Sifalo and Stripe payment gateways.</p>
         </div>
-        <button type="button" onClick={() => setOpen(!open)}>
-          {open ? 'Cancel' : '+ New campaign'}
-        </button>
+        <div className="btnRow">
+          <button type="button" className="secondaryBtn" onClick={() => setDonateOpen(!donateOpen)}>
+            {donateOpen ? 'Cancel donation' : '+ Record donation'}
+          </button>
+          <button type="button" onClick={() => setOpen(!open)}>
+            {open ? 'Cancel' : '+ New campaign'}
+          </button>
+        </div>
       </div>
+
+      <Card title="Payment gateways">
+        <div className="gatewayGrid">
+          {gateways.map((g) => (
+            <div key={g.id} className={`gatewayChip ${g.configured ? 'ready' : 'demo'}`}>
+              <strong>{g.label}</strong>
+              <span>{g.configured ? 'Configured' : g.id === 'mock' ? 'Always available' : 'Demo mode — add API keys'}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {donateOpen && (
+        <Card title="Collect donation">
+          <div className="formGrid">
+            <label>
+              <span>Campaign</span>
+              <select value={donate.campaignId || ''} onChange={(e) => setDonate({ ...donate, campaignId: e.target.value })}>
+                <option value="">Select active campaign…</option>
+                {activeCampaigns.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Gateway</span>
+              <select value={donate.gateway || 'zaad'} onChange={(e) => setDonate({ ...donate, gateway: e.target.value })}>
+                {gateways.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.label}
+                    {g.demoMode ? ' (demo)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Amount</span>
+              <input type="number" value={donate.amount || ''} onChange={(e) => setDonate({ ...donate, amount: e.target.value })} />
+            </label>
+            <label>
+              <span>Currency</span>
+              <input value={donate.currency || 'USD'} onChange={(e) => setDonate({ ...donate, currency: e.target.value })} />
+            </label>
+            <label>
+              <span>Donor name</span>
+              <input value={donate.donorName || ''} onChange={(e) => setDonate({ ...donate, donorName: e.target.value })} />
+            </label>
+            <label>
+              <span>Donor phone (required for mobile money)</span>
+              <input value={donate.donorPhone || ''} onChange={(e) => setDonate({ ...donate, donorPhone: e.target.value })} />
+            </label>
+            <label>
+              <span>Donor email</span>
+              <input value={donate.donorEmail || ''} onChange={(e) => setDonate({ ...donate, donorEmail: e.target.value })} />
+            </label>
+            <label>
+              <span>Donor country</span>
+              <input value={donate.donorCountry || ''} onChange={(e) => setDonate({ ...donate, donorCountry: e.target.value })} />
+            </label>
+          </div>
+          <button className="primary" type="button" disabled={saving} onClick={submitDonation}>
+            {saving ? 'Processing…' : 'Charge via gateway'}
+          </button>
+        </Card>
+      )}
 
       {open && (
         <Card title="Create fundraising campaign">
@@ -110,6 +235,7 @@ export default function FundraisingPage() {
       )}
 
       {err && <div className="error">{err}</div>}
+      {info && <div className="notice">{info}</div>}
 
       <Card title={`${campaigns.length} campaigns`}>
         {campaigns.length ? (
@@ -156,10 +282,11 @@ export default function FundraisingPage() {
       <Card title={`${donations.length} donations`}>
         {donations.length ? (
           <Table
-            headers={['Receipt', 'Campaign', 'Donor', 'Amount', 'Status', 'Date']}
+            headers={['Receipt', 'Campaign', 'Gateway', 'Donor', 'Amount', 'Status', 'Date']}
             rows={donations.map((x) => [
               x.receiptNo,
               x.campaign?.title || '—',
+              x.gateway || '—',
               x.donorName || x.donorCountry || 'Anonymous',
               `${x.currency} ${Number(x.amount).toLocaleString()}`,
               x.status,

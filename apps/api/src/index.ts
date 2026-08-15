@@ -12,6 +12,7 @@ import extendedRoutes from './routes/extended.js';
 import crudRoutes from './routes/crud.js';
 import paymentRoutes from './routes/payments.js';
 import analyticsRoutes from './routes/analytics.js';
+import portalRoutes from './routes/portal.js';
 import { getJwtSecret, zodErrorMessage } from './lib/helpers.js';
 import { prisma } from './lib/prisma.js';
 
@@ -58,6 +59,7 @@ app.use('/api/auth', authRoutes);
 // Public donation + webhook routes must be mounted before auth-gated routers
 // that apply `auth` middleware to the entire `/api` prefix.
 app.use('/api', paymentRoutes);
+app.use('/api/portal', portalRoutes);
 app.use('/api', crudRoutes);
 app.use('/api', extendedRoutes);
 app.use('/api/analytics', analyticsRoutes);

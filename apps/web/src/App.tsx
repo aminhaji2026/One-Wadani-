@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ChangePassword from './pages/ChangePassword';
+import PortalHome from './pages/PortalHome';
 import { ModulePage, PeoplePage, AnalyticsPage, OperationsPage, SecurityPage } from './pages/ModulePage';
 import FundraisingPage from './pages/FundraisingPage';
 import FinancePage from './pages/FinancePage';
@@ -12,6 +13,7 @@ import { getToken, getStoredUser } from './lib/api';
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
   const [mustChange, setMustChange] = useState(Boolean(getStoredUser()?.mustChangePassword));
+  const portal = getStoredUser()?.portal || 'staff';
 
   useEffect(() => {
     setAuthed(Boolean(getToken()));
@@ -41,6 +43,10 @@ export default function App() {
         }}
       />
     );
+  }
+
+  if (portal !== 'staff') {
+    return <PortalHome />;
   }
 
   return (

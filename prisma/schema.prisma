@@ -179,7 +179,10 @@ model Member {
   firstName      String
   lastName       String
   phone          String?
-  email          String?
+  email          String?      @unique
+  passwordHash   String?
+  mustChangePassword Boolean  @default(true)
+  portalEnabled  Boolean      @default(false)
   country        String
   city           String?
   dateOfBirth    DateTime?
@@ -204,7 +207,10 @@ model Supporter {
   firstName String
   lastName  String?
   phone     String?
-  email     String?
+  email     String?      @unique
+  passwordHash String?
+  mustChangePassword Boolean @default(true)
+  portalEnabled Boolean  @default(false)
   country   String
   city      String?
   language  String       @default("so")
@@ -217,7 +223,6 @@ model Supporter {
 
   @@index([officeId])
   @@index([country])
-  @@index([email])
 }
 
 model Consent {
@@ -257,7 +262,10 @@ model Volunteer {
   firstName String
   lastName  String?
   phone     String?
-  email     String?
+  email     String?      @unique
+  passwordHash String?
+  mustChangePassword Boolean @default(true)
+  portalEnabled Boolean  @default(false)
   skills    String[]
   status    PersonStatus @default(ACTIVE)
   officeId  String?
