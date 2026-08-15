@@ -72,6 +72,8 @@ select {
   border-bottom: 3px solid var(--orange);
   overflow: hidden;
   min-height: 168px;
+  position: relative;
+  z-index: 2;
 }
 
 .eventBannerLabel {
@@ -171,9 +173,20 @@ select {
     linear-gradient(180deg, #fff9f4 0%, var(--paper) 40%, #fff3ea 100%);
 }
 
-.siteNav {
+.siteTop {
   position: sticky;
   top: 0;
+  z-index: 50;
+}
+
+.siteTop.is-scrolled .siteNav {
+  background: rgba(255, 247, 241, 0.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 rgba(80, 30, 10, 0.08);
+}
+
+.siteNav {
+  position: relative;
   z-index: 40;
   transition: background 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease;
 }

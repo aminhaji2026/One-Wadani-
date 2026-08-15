@@ -18,37 +18,39 @@ export default function SiteShell() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <EventBanner />
-      <header className={`siteNav ${scrolled ? 'is-scrolled' : ''}`}>
-        <div className="siteNavInner">
-          <Link to="/" className="siteBrand" aria-label="Waddani home">
-            <img src="/waddani-mark.svg" alt="" width={40} height={40} />
-            <span>WADDANI</span>
-          </Link>
-          <button
-            className="navToggle"
-            type="button"
-            aria-expanded={open}
-            aria-label="Menu"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span />
-            <span />
-          </button>
-          <nav className={open ? 'is-open' : ''} onClick={() => setOpen(false)}>
-            <a href="/#action">Take action</a>
-            <a href="/#plan">Our plan</a>
-            <a href="/#news">News</a>
-            <Link to="/join">Join</Link>
-            <Link to="/donate" className="navCta">
-              Donate
+      <div className={`siteTop ${scrolled ? 'is-scrolled' : ''}`}>
+        <EventBanner />
+        <header className="siteNav">
+          <div className="siteNavInner">
+            <Link to="/" className="siteBrand" aria-label="Waddani home">
+              <img src="/waddani-mark.svg" alt="" width={40} height={40} />
+              <span>WADDANI</span>
             </Link>
-            <Link to="/login" className="navQuiet">
-              Staff
-            </Link>
-          </nav>
-        </div>
-      </header>
+            <button
+              className="navToggle"
+              type="button"
+              aria-expanded={open}
+              aria-label="Menu"
+              onClick={() => setOpen((v) => !v)}
+            >
+              <span />
+              <span />
+            </button>
+            <nav className={open ? 'is-open' : ''} onClick={() => setOpen(false)}>
+              <a href="/#action">Take action</a>
+              <a href="/#plan">Our plan</a>
+              <a href="/#news">News</a>
+              <Link to="/join">Join</Link>
+              <Link to="/donate" className="navCta">
+                Donate
+              </Link>
+              <Link to="/login" className="navQuiet">
+                Staff
+              </Link>
+            </nav>
+          </div>
+        </header>
+      </div>
       <main id="main">
         <Outlet />
       </main>
