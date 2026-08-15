@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ChangePassword from './pages/ChangePassword';
-import PortalHome from './pages/PortalHome';
+import PortalApp from './pages/portals/PortalApp';
 import { ModulePage, PeoplePage, AnalyticsPage, OperationsPage, SecurityPage } from './pages/ModulePage';
 import FundraisingPage from './pages/FundraisingPage';
 import FinancePage from './pages/FinancePage';
@@ -46,7 +46,7 @@ export default function App() {
   }
 
   if (portal !== 'staff') {
-    return <PortalHome />;
+    return <PortalApp />;
   }
 
   return (

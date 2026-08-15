@@ -272,6 +272,65 @@ async function main() {
     });
   }
 
+  const townHall = await prisma.event.findFirst({ where: { title: 'Hargeisa Membership Town Hall' } });
+  if (!townHall) {
+    await prisma.event.create({
+      data: {
+        title: 'Hargeisa Membership Town Hall',
+        description: 'Open briefing for members and volunteers on local organising priorities.',
+        venue: 'HQ Conference Hall, Hargeisa',
+        startsAt: new Date(Date.now() + 5 * 86400000),
+        endsAt: new Date(Date.now() + 5 * 86400000 + 2 * 3600000),
+        capacity: 180,
+        status: 'PUBLISHED',
+        officeId: hq.id,
+      },
+    });
+  }
+
+  const diasporaCall = await prisma.event.findFirst({ where: { title: 'Diaspora Solidarity Call' } });
+  if (!diasporaCall) {
+    await prisma.event.create({
+      data: {
+        title: 'Diaspora Solidarity Call',
+        description: 'Online briefing for supporters across the diaspora.',
+        venue: 'Virtual / Zoom',
+        startsAt: new Date(Date.now() + 9 * 86400000),
+        capacity: 500,
+        status: 'PUBLISHED',
+        officeId: null,
+      },
+    });
+  }
+
+  const outreachTask = await prisma.task.findFirst({ where: { title: 'Neighbourhood outreach briefing' } });
+  if (!outreachTask) {
+    await prisma.task.create({
+      data: {
+        title: 'Neighbourhood outreach briefing',
+        description: 'Prepare talking points and materials for weekend door-to-door visits.',
+        status: 'TODO',
+        priority: 'HIGH',
+        dueAt: new Date(Date.now() + 3 * 86400000),
+        officeId: hq.id,
+      },
+    });
+  }
+
+  const checkinTask = await prisma.task.findFirst({ where: { title: 'Event check-in desk setup' } });
+  if (!checkinTask) {
+    await prisma.task.create({
+      data: {
+        title: 'Event check-in desk setup',
+        description: 'Confirm scanners, badges, and volunteer rota for the next town hall.',
+        status: 'IN_PROGRESS',
+        priority: 'NORMAL',
+        dueAt: new Date(Date.now() + 4 * 86400000),
+        officeId: hq.id,
+      },
+    });
+  }
+
   console.log('Seed complete.');
   console.log('Staff admin: admin@waddani.local / ChangeMe123!');
   console.log('Staff user:  staff@waddani.local / ChangeMe123!');

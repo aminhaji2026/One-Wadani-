@@ -758,6 +758,21 @@ tbody tr:hover { background: rgba(255, 102, 0, 0.04); }
   z-index: 10;
   animation: rise 0.45s var(--ease) both;
 }
+.portalHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.portalPill {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 102, 0, 0.12);
+  border: 1px solid rgba(255, 102, 0, 0.22);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+}
 .portalBrand {
   display: flex;
   gap: 12px;
@@ -775,10 +790,136 @@ tbody tr:hover { background: rgba(255, 102, 0, 0.04); }
   margin-top: 2px;
   text-transform: capitalize;
 }
+.portalLayout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 0;
+  max-width: 1240px;
+  margin: 0 auto;
+  min-height: calc(100vh - 78px);
+}
+.portalNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 14px 28px;
+  border-right: 1px solid var(--line);
+  position: sticky;
+  top: 78px;
+  height: fit-content;
+}
+.portalNav a {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 13.5px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  transition: background 0.2s, transform 0.2s;
+}
+.portalNav a:hover {
+  background: rgba(255, 102, 0, 0.08);
+  transform: translateX(2px);
+}
+.portalNav a.active {
+  background: linear-gradient(135deg, rgba(255, 138, 51, 0.28), rgba(255, 102, 0, 0.18));
+  box-shadow: inset 3px 0 0 var(--brand-2);
+}
 .portalMain {
   padding: 24px clamp(16px, 3vw, 28px) 48px;
   max-width: 1120px;
-  margin: 0 auto;
+}
+.theme-supporter .heroBand {
+  background: linear-gradient(125deg, #ff9a4d 0%, #ff6600 46%, #d45500 100%);
+}
+.theme-volunteer .heroBand {
+  background: linear-gradient(125deg, #ffa366 0%, #ff7a1a 40%, #e24f00 100%);
+}
+.theme-member .portalPill { background: rgba(255, 102, 0, 0.14); }
+.theme-supporter .portalPill {
+  background: rgba(212, 85, 0, 0.12);
+  color: #a84400;
+}
+.theme-volunteer .portalPill {
+  background: rgba(226, 79, 0, 0.12);
+  color: #9a3a00;
+}
+.actionStack {
+  display: grid;
+  gap: 10px;
+}
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+a.primary.actionLink {
+  background: linear-gradient(135deg, var(--brand-3), var(--brand-2));
+  color: #111;
+}
+a.secondaryBtn.actionLink {
+  border: 1px solid rgba(255, 102, 0, 0.35);
+}
+.mutedLine {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+  white-space: normal;
+  max-width: 42ch;
+}
+.statusChip {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(20, 17, 15, 0.06);
+}
+.statusChip.ok {
+  background: rgba(15, 122, 76, 0.12);
+  color: var(--success);
+}
+.inlineSelect {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(20, 17, 15, 0.12);
+  background: #fff;
+}
+.memberCard {
+  border: 1px solid rgba(255, 102, 0, 0.22);
+  border-radius: 18px;
+  padding: 18px;
+  background:
+    linear-gradient(160deg, rgba(255, 102, 0, 0.12), transparent 42%),
+    #fff;
+}
+.memberCardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.memberCardTop strong {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.memberCardTop span {
+  text-transform: capitalize;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+}
+.memberNo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
 }
 
 .gatewayGrid {
@@ -886,6 +1027,21 @@ tbody tr:hover { background: rgba(255, 102, 0, 0.04); }
     border-top: 1px solid rgba(255, 255, 255, 0.28);
     padding: 20px 18px 36px;
   }
+}
+
+@media (max-width: 900px) {
+  .portalLayout {
+    grid-template-columns: 1fr;
+  }
+  .portalNav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 14px;
+  }
+  .portalNav a { flex: 1 1 auto; text-align: center; }
 }
 
 @media (max-width: 860px) {
