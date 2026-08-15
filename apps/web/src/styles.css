@@ -71,17 +71,17 @@ select {
   color: white;
   border-bottom: 3px solid var(--orange);
   overflow: hidden;
-  min-height: 92px;
+  min-height: 168px;
 }
 
 .eventBannerLabel {
   display: grid;
   place-items: center;
-  padding: 0 16px;
+  padding: 0 22px;
   background: var(--orange);
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 15px;
+  font-size: 18px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   z-index: 2;
@@ -96,9 +96,9 @@ select {
 .eventBannerTrack {
   display: flex;
   width: max-content;
-  gap: 10px;
-  padding: 8px 10px;
-  animation: eventMarquee 42s linear infinite;
+  gap: 14px;
+  padding: 12px 14px;
+  animation: eventMarquee 48s linear infinite;
   will-change: transform;
 }
 
@@ -110,10 +110,10 @@ select {
   position: relative;
   margin: 0;
   flex: 0 0 auto;
-  width: min(220px, 42vw);
-  height: 76px;
+  width: min(360px, 58vw);
+  height: 144px;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #2a170f;
 }
 
@@ -134,8 +134,8 @@ select {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 8px 8px 6px;
-  font-size: 11px;
+  padding: 14px 12px 10px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
   background: linear-gradient(transparent, rgba(12, 6, 3, 0.88));
@@ -1223,25 +1223,27 @@ td {
 
 @media (max-width: 760px) {
   .eventBanner {
-    min-height: 78px;
-    grid-template-columns: 64px 1fr;
+    min-height: 128px;
+    grid-template-columns: 56px 1fr;
   }
 
   .eventBannerLabel {
     padding: 0 8px;
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 0.08em;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
   }
 
   .eventBannerItem {
-    width: min(168px, 58vw);
-    height: 62px;
+    width: min(260px, 72vw);
+    height: 104px;
   }
 
   .eventBannerTrack {
-    animation-duration: 32s;
+    animation-duration: 36s;
+    gap: 10px;
+    padding: 10px;
   }
 
   .shell {
