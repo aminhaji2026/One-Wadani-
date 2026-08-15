@@ -13,6 +13,8 @@ import crudRoutes from './routes/crud.js';
 import paymentRoutes from './routes/payments.js';
 import analyticsRoutes from './routes/analytics.js';
 import portalRoutes from './routes/portal.js';
+import publicRoutes from './routes/public.js';
+import platformRoutes from './routes/platform.js';
 import { getJwtSecret, zodErrorMessage } from './lib/helpers.js';
 import { prisma } from './lib/prisma.js';
 
@@ -49,17 +51,25 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.get('/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ ok: true, service: 'waddani-api', db: 'up' });
+    res.json({
+      ok: true,
+      service: 'waddani-api',
+      db: 'up',
+      version: process.env.RAILWAY_GIT_COMMIT_SHA || 'dev',
+      time: new Date().toISOString(),
+    });
   } catch {
     res.status(503).json({ ok: false, service: 'waddani-api', db: 'down' });
   }
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api', publicRoutes);
 // Public donation + webhook routes must be mounted before auth-gated routers
 // that apply `auth` middleware to the entire `/api` prefix.
 app.use('/api', paymentRoutes);
 app.use('/api/portal', portalRoutes);
+app.use('/api', platformRoutes);
 app.use('/api', crudRoutes);
 app.use('/api', extendedRoutes);
 app.use('/api/analytics', analyticsRoutes);

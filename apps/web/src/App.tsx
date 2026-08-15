@@ -8,9 +8,14 @@ import PortalApp from './pages/portals/PortalApp';
 import { ModulePage, PeoplePage, AnalyticsPage, OperationsPage, SecurityPage } from './pages/ModulePage';
 import FundraisingPage from './pages/FundraisingPage';
 import FinancePage from './pages/FinancePage';
+import ApprovalsPage from './pages/ApprovalsPage';
+import RegisterPage from './pages/RegisterPage';
+import PublicCampaignPage from './pages/PublicCampaignPage';
+import CheckInPage from './pages/CheckInPage';
 import { getToken, getStoredUser } from './lib/api';
+import { I18nProvider } from './lib/i18n';
 
-export default function App() {
+function AuthedApp() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
   const [mustChange, setMustChange] = useState(Boolean(getStoredUser()?.mustChangePassword));
   const portal = getStoredUser()?.portal || 'staff';
@@ -32,13 +37,7 @@ export default function App() {
   }
 
   if (mustChange) {
-    return (
-      <ChangePassword
-        onDone={() => {
-          setMustChange(false);
-        }}
-      />
-    );
+    return <ChangePassword onDone={() => setMustChange(false)} />;
   }
 
   if (portal !== 'staff') {
@@ -49,6 +48,7 @@ export default function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/approvals" element={<ApprovalsPage />} />
         <Route path="/organisation" element={<ModulePage kind="organisation" />} />
         <Route path="/members" element={<ModulePage kind="members" />} />
         <Route path="/supporters" element={<ModulePage kind="supporters" />} />
@@ -61,5 +61,18 @@ export default function App() {
         <Route path="/security" element={<SecurityPage />} />
       </Routes>
     </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <Routes>
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/c/:slug" element={<PublicCampaignPage />} />
+        <Route path="/check-in" element={<CheckInPage />} />
+        <Route path="/*" element={<AuthedApp />} />
+      </Routes>
+    </I18nProvider>
   );
 }

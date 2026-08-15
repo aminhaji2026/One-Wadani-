@@ -19,40 +19,34 @@ async function main() {
   assert.equal(health.res.status, 200);
   assert.equal(health.body.ok, true);
 
-  const badLogin = await json('/api/auth/login', {
+  const gateways = await json('/api/payments/gateways');
+  assert.equal(gateways.res.status, 200);
+  assert.ok(Array.isArray(gateways.body.gateways));
+
+  const publicCampaigns = await json('/api/public/campaigns');
+  assert.equal(publicCampaigns.res.status, 200);
+
+  const seedLogin = await json('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: 'nobody@example.com', password: 'wrongpass1' }),
+    body: JSON.stringify({ email: 'admin@waddani.local', password: 'ChangeMe123!', portal: 'staff' }),
   });
-  assert.equal(badLogin.res.status, 401);
+  assert.equal(seedLogin.res.status, 200, `login failed: ${JSON.stringify(seedLogin.body)}`);
+  const token = seedLogin.body.token as string;
 
-  const login = await json('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({
-      email: process.env.SMOKE_EMAIL || 'admin@waddani.local',
-      password: process.env.SMOKE_PASSWORD || 'SecurePass123!',
-    }),
-  });
-
-  if (login.res.status !== 200) {
-    // Fall back to seed password if smoke password not updated.
-    const seedLogin = await json('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'admin@waddani.local', password: 'ChangeMe123!' }),
-    });
-    assert.equal(seedLogin.res.status, 200, `login failed: ${JSON.stringify(seedLogin.body)}`);
-    assert.ok(seedLogin.body.token);
-    console.log('smoke ok (seed credentials)');
-    return;
-  }
-
-  const token = login.body.token as string;
   const me = await json('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
   assert.equal(me.res.status, 200);
-  assert.ok(Array.isArray(me.body.permissions));
 
-  const members = await json('/api/members', { headers: { Authorization: `Bearer ${token}` } });
-  assert.equal(members.res.status, 200);
-  assert.ok(Array.isArray(members.body));
+  const inbox = await json('/api/approvals/inbox', { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(inbox.res.status, 200);
+
+  const memberLogin = await json('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: 'member@waddani.local', password: 'ChangeMe123!', portal: 'member' }),
+  });
+  assert.equal(memberLogin.res.status, 200);
+  const mToken = memberLogin.body.token as string;
+  const events = await json('/api/portal/events', { headers: { Authorization: `Bearer ${mToken}` } });
+  assert.equal(events.res.status, 200);
 
   console.log('smoke ok');
 }

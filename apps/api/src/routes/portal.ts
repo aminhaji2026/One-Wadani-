@@ -7,6 +7,7 @@ import { asyncHandler, param } from '../lib/helpers.js';
 import { getGateway, listGateways } from '../services/payments.js';
 import { nextReceiptNo } from '../lib/ids.js';
 import { audit } from '../services/audit.js';
+import { notify } from '../services/notifications.js';
 
 const r = Router();
 r.use(auth);
@@ -220,6 +221,43 @@ r.patch(
 );
 
 r.get(
+  '/membership-card',
+  requirePortal('member'),
+  asyncHandler(async (req: AuthRequest, res) => {
+    const member = await prisma.member.findUnique({
+      where: { id: req.user!.id },
+      include: { office: true },
+    });
+    if (!member) return res.status(404).json({ error: 'Member not found' });
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"/><title>Waddani membership ${member.membershipNo}</title>
+<style>
+  body{font-family:Georgia,serif;background:#0f172a;color:#0f172a;margin:0;padding:24px}
+  .card{max-width:420px;margin:0 auto;background:linear-gradient(145deg,#fff7ed,#fff);border:2px solid #ea580c;border-radius:18px;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  h1{margin:0;font-size:1.4rem;letter-spacing:.04em;color:#9a3412}
+  .no{font-size:1.8rem;font-weight:700;margin:12px 0}
+  .meta{display:grid;gap:8px;font-family:system-ui,sans-serif;font-size:.92rem}
+  .meta span{color:#64748b;display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+  @media print{body{background:#fff;padding:0}.card{box-shadow:none}}
+</style></head><body>
+  <div class="card">
+    <h1>WADDANI ONE</h1>
+    <div class="no">${member.membershipNo}</div>
+    <div class="meta">
+      <p><span>Member</span><b>${member.firstName} ${member.lastName || ''}</b></p>
+      <p><span>Status</span><b>${member.status}</b></p>
+      <p><span>Office</span><b>${member.office?.name || 'National HQ'}</b></p>
+      <p><span>Country</span><b>${member.country || '—'}</b></p>
+    </div>
+  </div>
+  <script>window.print()</script>
+</body></html>`;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  }),
+);
+
+r.get(
   '/events',
   requirePortal('member', 'volunteer'),
   asyncHandler(async (req: AuthRequest, res) => {
@@ -296,7 +334,19 @@ r.post(
       },
     });
     await audit(req, 'CREATE', 'EventAttendee', attendee.id, undefined, { eventId });
-    res.status(201).json({ ok: true, attendee });
+    await notify({
+      recipientPortal: 'member',
+      recipientId: member.id,
+      title: `RSVP confirmed: ${event.title}`,
+      body: `Your check-in code is ${attendee.qrToken}. Show this at the venue.`,
+      email: member.email,
+      link: '/events',
+    });
+    res.status(201).json({
+      ok: true,
+      attendee,
+      qrImage: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(attendee.qrToken)}`,
+    });
   }),
 );
 

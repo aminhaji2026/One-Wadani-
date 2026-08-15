@@ -56,10 +56,10 @@ export async function api(path: string, options: RequestInit = {}) {
   return data;
 }
 
-export async function login(email: string, password: string, portal: PortalKind = 'staff') {
+export async function login(email: string, password: string, portal: PortalKind = 'staff', totpCode?: string) {
   const data = await api('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password, portal }),
+    body: JSON.stringify({ email, password, portal, totpCode }),
   });
   localStorage.setItem('waddani_token', data.token);
   localStorage.setItem('waddani_user', JSON.stringify(data.user));

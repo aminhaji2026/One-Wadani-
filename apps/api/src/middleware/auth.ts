@@ -2,6 +2,7 @@ import type { NextFunction, Response, Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { getJwtSecret } from '../lib/helpers.js';
+import { isSessionActive } from '../services/sessions.js';
 
 export type PortalKind = 'staff' | 'member' | 'supporter' | 'volunteer';
 
@@ -13,11 +14,13 @@ export type AuthUser = {
   mustChangePassword?: boolean;
   name?: string;
   email?: string | null;
+  totpEnabled?: boolean;
+  jti?: string;
 };
 
 export type AuthRequest = Request & { user?: AuthUser };
 
-type JwtPayload = { sub: string; portal?: PortalKind };
+type JwtPayload = { sub: string; portal?: PortalKind; jti?: string };
 
 export async function auth(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
@@ -26,6 +29,9 @@ export async function auth(req: AuthRequest, res: Response, next: NextFunction) 
 
   try {
     const payload = jwt.verify(token, getJwtSecret()) as JwtPayload;
+    if (!(await isSessionActive(payload.jti))) {
+      return res.status(401).json({ error: 'Session expired or revoked' });
+    }
     const portal: PortalKind = payload.portal || 'staff';
 
     if (portal === 'staff') {
@@ -57,6 +63,8 @@ export async function auth(req: AuthRequest, res: Response, next: NextFunction) 
         mustChangePassword: user.mustChangePassword,
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
+        totpEnabled: user.totpEnabled,
+        jti: payload.jti,
       };
       return next();
     }
@@ -74,6 +82,7 @@ export async function auth(req: AuthRequest, res: Response, next: NextFunction) 
         mustChangePassword: member.mustChangePassword,
         name: `${member.firstName} ${member.lastName}`,
         email: member.email,
+        jti: payload.jti,
       };
       return next();
     }
@@ -91,6 +100,7 @@ export async function auth(req: AuthRequest, res: Response, next: NextFunction) 
         mustChangePassword: supporter.mustChangePassword,
         name: `${supporter.firstName} ${supporter.lastName || ''}`.trim(),
         email: supporter.email,
+        jti: payload.jti,
       };
       return next();
     }
@@ -108,6 +118,7 @@ export async function auth(req: AuthRequest, res: Response, next: NextFunction) 
         mustChangePassword: volunteer.mustChangePassword,
         name: `${volunteer.firstName} ${volunteer.lastName || ''}`.trim(),
         email: volunteer.email,
+        jti: payload.jti,
       };
       return next();
     }

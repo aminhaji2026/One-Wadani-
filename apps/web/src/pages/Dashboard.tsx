@@ -41,14 +41,22 @@ export default function Dashboard() {
   if (error) return <div className="error">{error}</div>;
   if (!d) return <div className="loading">Loading command centre…</div>;
 
+  const roles = (JSON.parse(localStorage.getItem('waddani_user') || '{}').roles || []) as string[];
+  const focus =
+    roles.includes('FINANCE_OFFICER')
+      ? 'Finance focus: watch confirmed donations, approved expenses, and campaign momentum.'
+      : roles.includes('COMMS_OFFICER')
+        ? 'Comms focus: publish announcements and keep supporter consent-aware outreach moving.'
+        : roles.includes('OFFICE_STAFF') || roles.includes('OFFICE_MANAGER')
+          ? 'Office focus: members, supporters, events, and the approvals inbox.'
+          : 'Leadership focus: membership growth, fundraising pulse, and field activity.';
+
   return (
     <>
       <section className="heroBand">
         <div className="eyebrow">Command centre</div>
         <h2>Momentum across the movement</h2>
-        <p>
-          Track membership growth, supporter reach, fundraising pulse, and field activity in one live view.
-        </p>
+        <p>{focus}</p>
       </section>
 
       <div className="stats">

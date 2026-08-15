@@ -6,6 +6,7 @@ import PortalEvents from './PortalEvents';
 import PortalProfile from './PortalProfile';
 import { SupporterCampaigns, SupporterConsents, SupporterGive } from './SupporterPages';
 import VolunteerTasks from './VolunteerTasks';
+import CheckInPage from '../CheckInPage';
 
 export default function PortalApp() {
   const portal = (getStoredUser()?.portal || 'member') as Exclude<PortalKind, 'staff'>;
@@ -44,6 +45,7 @@ export default function PortalApp() {
         <Route path="/" element={<VolunteerHome />} />
         <Route path="/tasks" element={<VolunteerTasks />} />
         <Route path="/events" element={<PortalEvents mode="volunteer" />} />
+        <Route path="/check-in" element={<CheckInPage embedded />} />
         <Route path="/profile" element={<PortalProfile portal="volunteer" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { clearSession, getStoredUser, type PortalKind } from '../lib/api';
 import BrandLogo from './BrandLogo';
+import NotificationBell from './NotificationBell';
 
 type NavItem = [string, string];
 
@@ -22,6 +23,7 @@ const navByPortal: Record<Exclude<PortalKind, 'staff'>, NavItem[]> = {
     ['/', 'Home'],
     ['/tasks', 'Tasks'],
     ['/events', 'Field events'],
+    ['/check-in', 'Check-in'],
     ['/profile', 'Profile'],
   ],
 };
@@ -57,6 +59,7 @@ export default function PortalShell({
         </div>
         <div className="portalHeaderActions">
           <span className="portalPill">{meta.subtitle}</span>
+          <NotificationBell />
           <button
             type="button"
             className="secondaryBtn"

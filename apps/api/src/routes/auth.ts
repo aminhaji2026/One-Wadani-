@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { asyncHandler, getJwtSecret } from '../lib/helpers.js';
+import { asyncHandler } from '../lib/helpers.js';
 import { auth, type AuthRequest, type PortalKind } from '../middleware/auth.js';
 import { audit } from '../services/audit.js';
+import { createAuthSession, revokeSessionsForAccount, signSessionToken } from '../services/sessions.js';
+import { verifyTotp } from '../services/totp.js';
 
 const r = Router();
 
@@ -18,10 +19,6 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Try again later.' },
 });
 
-function signToken(id: string, portal: PortalKind) {
-  return jwt.sign({ sub: id, portal }, getJwtSecret(), { expiresIn: '8h' });
-}
-
 r.post(
   '/login',
   loginLimiter,
@@ -31,6 +28,7 @@ r.post(
         email: z.string().email(),
         password: z.string().min(8),
         portal: z.enum(['staff', 'member', 'supporter', 'volunteer']).default('staff'),
+        totpCode: z.string().min(6).max(8).optional(),
       })
       .safeParse(req.body);
     if (!parsed.success) {
@@ -42,12 +40,27 @@ r.post(
     const { portal } = parsed.data;
 
     if (portal === 'staff') {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findUnique({
+        where: { email },
+        include: { roles: { include: { role: true } } },
+      });
       if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       if (user.status !== 'ACTIVE') return res.status(401).json({ error: 'Account unavailable' });
-      const token = signToken(user.id, 'staff');
+      if (user.totpEnabled) {
+        if (!parsed.data.totpCode || !user.totpSecret || !verifyTotp(user.totpSecret, parsed.data.totpCode)) {
+          return res.status(401).json({ error: 'Authenticator code required', totpRequired: true });
+        }
+      }
+      const { token, jti } = signSessionToken(user.id, 'staff');
+      await createAuthSession({
+        portal: 'staff',
+        accountId: user.id,
+        jti,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
       return res.json({
         token,
         user: {
@@ -58,6 +71,8 @@ r.post(
           mustChangePassword: user.mustChangePassword,
           officeId: user.officeId,
           email: user.email,
+          totpEnabled: user.totpEnabled,
+          roles: user.roles.map((r) => r.role.name),
         },
       });
     }
@@ -70,7 +85,14 @@ r.post(
       if (member.status === 'REJECTED' || member.status === 'INACTIVE') {
         return res.status(401).json({ error: 'Account unavailable' });
       }
-      const token = signToken(member.id, 'member');
+      const { token, jti } = signSessionToken(member.id, 'member');
+      await createAuthSession({
+        portal: 'member',
+        accountId: member.id,
+        jti,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
       return res.json({
         token,
         user: {
@@ -98,7 +120,14 @@ r.post(
       if (supporter.status === 'REJECTED' || supporter.status === 'INACTIVE') {
         return res.status(401).json({ error: 'Account unavailable' });
       }
-      const token = signToken(supporter.id, 'supporter');
+      const { token, jti } = signSessionToken(supporter.id, 'supporter');
+      await createAuthSession({
+        portal: 'supporter',
+        accountId: supporter.id,
+        jti,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
       return res.json({
         token,
         user: {
@@ -124,7 +153,14 @@ r.post(
     if (volunteer.status === 'REJECTED' || volunteer.status === 'INACTIVE') {
       return res.status(401).json({ error: 'Account unavailable' });
     }
-    const token = signToken(volunteer.id, 'volunteer');
+    const { token, jti } = signSessionToken(volunteer.id, 'volunteer');
+    await createAuthSession({
+      portal: 'volunteer',
+      accountId: volunteer.id,
+      jti,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     return res.json({
       token,
       user: {
@@ -244,7 +280,15 @@ r.post(
     }
 
     await audit(req, 'UPDATE', 'PortalPassword', id, undefined, { portal, mustChangePassword: false });
-    const token = signToken(id, portal);
+    await revokeSessionsForAccount(portal, id);
+    const { token, jti } = signSessionToken(id, portal);
+    await createAuthSession({
+      portal,
+      accountId: id,
+      jti,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json({ ok: true, token, user: userPayload });
   }),
 );

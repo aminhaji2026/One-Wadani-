@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, getStoredUser } from '../../lib/api';
 import { Card, Empty, ProgressBar, Stat, Table } from '../../components/Common';
+import { useI18n } from '../../lib/i18n';
 
 type HomeData = {
   cards?: { label: string; value?: string | null }[];
@@ -31,22 +32,56 @@ type HomeData = {
   openTasks?: { id: string; title: string; priority: string; status: string; dueAt?: string | null }[];
 };
 
-export function MemberHome() {
-  const user = getStoredUser();
-  const [data, setData] = useState<HomeData | null>(null);
-  const [error, setError] = useState('');
+type Announcement = { id: string; title: string; body: string; publishedAt: string };
 
+function usePortalHome() {
+  const [data, setData] = useState<HomeData | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [error, setError] = useState('');
   useEffect(() => {
     api('/portal/home')
       .then(setData)
       .catch((e: Error) => setError(e.message));
+    api('/announcements')
+      .then((d) => setAnnouncements(d.announcements || []))
+      .catch(() => undefined);
   }, []);
+  return { data, announcements, error };
+}
+
+function AnnouncementList({ items }: { items: Announcement[] }) {
+  const { t } = useI18n();
+  if (!items.length) return null;
+  return (
+    <Card title={t('announcements')}>
+      <div className="campaignRail">
+        {items.slice(0, 4).map((a) => (
+          <div className="campaignRow" key={a.id}>
+            <div className="campaignRowHead">
+              <strong>{a.title}</strong>
+              <span>{new Date(a.publishedAt).toLocaleDateString()}</span>
+            </div>
+            <div className="mutedLine">{a.body}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+export function MemberHome() {
+  const user = getStoredUser();
+  const { t } = useI18n();
+  const { data, announcements, error } = usePortalHome();
 
   return (
     <>
       <section className="heroBand">
         <div className="eyebrow">Member portal</div>
-        <h2>{user?.name ? `${user.name.split(' ')[0]}, your membership hub` : 'Your membership hub'}</h2>
+        <h2>
+          {t('welcome')}
+          {user?.name ? `, ${user.name.split(' ')[0]}` : ''} — your membership hub
+        </h2>
         <p>Carry your digital membership, RSVP to gatherings, and stay close to local Waddani activity.</p>
       </section>
       {error && <div className="error">{error}</div>}
@@ -58,6 +93,7 @@ export function MemberHome() {
           ))}
         </div>
       )}
+      <AnnouncementList items={announcements} />
       <div className="grid2">
         <Card
           title="Next gatherings"
@@ -77,7 +113,7 @@ export function MemberHome() {
               ])}
             />
           ) : (
-            <Empty text="No published events yet." />
+            <Empty text={t('emptyEvents')} />
           )}
         </Card>
         <Card title="Quick actions">
@@ -97,14 +133,8 @@ export function MemberHome() {
 
 export function SupporterHome() {
   const user = getStoredUser();
-  const [data, setData] = useState<HomeData | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api('/portal/home')
-      .then(setData)
-      .catch((e: Error) => setError(e.message));
-  }, []);
+  const { t } = useI18n();
+  const { data, announcements, error } = usePortalHome();
 
   return (
     <>
@@ -122,6 +152,7 @@ export function SupporterHome() {
           ))}
         </div>
       )}
+      <AnnouncementList items={announcements} />
       <div className="grid2">
         <Card
           title="Active campaigns"
@@ -150,7 +181,7 @@ export function SupporterHome() {
               })}
             </div>
           ) : (
-            <Empty text="No active campaigns." />
+            <Empty text={t('emptyCampaigns')} />
           )}
         </Card>
         <Card
@@ -172,7 +203,7 @@ export function SupporterHome() {
               ])}
             />
           ) : (
-            <Empty text="No donations yet from this account." />
+            <Empty text="No donations yet — start from Give." />
           )}
         </Card>
       </div>
@@ -182,14 +213,8 @@ export function SupporterHome() {
 
 export function VolunteerHome() {
   const user = getStoredUser();
-  const [data, setData] = useState<HomeData | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api('/portal/home')
-      .then(setData)
-      .catch((e: Error) => setError(e.message));
-  }, []);
+  const { t } = useI18n();
+  const { data, announcements, error } = usePortalHome();
 
   return (
     <>
@@ -207,6 +232,7 @@ export function VolunteerHome() {
           ))}
         </div>
       )}
+      <AnnouncementList items={announcements} />
       <div className="grid2">
         <Card
           title="Open tasks"
@@ -217,12 +243,18 @@ export function VolunteerHome() {
           }
         >
           {data?.openTasks?.length ? (
-            <Table
-              headers={['Task', 'Priority', 'Status']}
-              rows={data.openTasks.slice(0, 5).map((t) => [t.title, t.priority, t.status])}
-            />
+            <div className="taskCards">
+              {data.openTasks.slice(0, 5).map((task) => (
+                <div className="taskCard" key={task.id}>
+                  <strong>{task.title}</strong>
+                  <span>
+                    {task.priority} · {task.status}
+                  </span>
+                </div>
+              ))}
+            </div>
           ) : (
-            <Empty text="No open tasks for your office." />
+            <Empty text={t('emptyTasks')} />
           )}
         </Card>
         <Card title="Nearby / published events">
@@ -236,7 +268,7 @@ export function VolunteerHome() {
               ])}
             />
           ) : (
-            <Empty text="No upcoming field events." />
+            <Empty text={t('emptyEvents')} />
           )}
         </Card>
       </div>

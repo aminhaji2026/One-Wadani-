@@ -10,6 +10,7 @@ type Campaign = {
   raisedAmount: string | number;
   currency: string;
   status: string;
+  slug?: string | null;
   office?: { name?: string } | null;
 };
 
@@ -296,6 +297,27 @@ export default function FundraisingPage() {
                     }}
                   >
                     Reject
+                  </button>
+                </span>
+              ) : x.status === 'ACTIVE' ? (
+                <span className="actionPair" key={x.id}>
+                  <button
+                    className="linkish"
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const result = await api(`/campaigns/${x.id}/publish-slug`, { method: 'POST' });
+                        const path = result.shareUrl || `/c/${result.campaign?.slug || x.id}`;
+                        const url = `${window.location.origin}${path}`;
+                        await navigator.clipboard.writeText(url);
+                        setInfo(`Public link copied: ${url}`);
+                        await load();
+                      } catch (e) {
+                        setErr(e instanceof Error ? e.message : 'Share link failed');
+                      }
+                    }}
+                  >
+                    Copy public link
                   </button>
                 </span>
               ) : (

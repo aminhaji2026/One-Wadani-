@@ -142,6 +142,31 @@ export default function PortalProfile({ portal }: { portal: Exclude<PortalKind, 
                   </p>
                 )}
               </div>
+              {portal === 'member' && (
+                <button
+                  type="button"
+                  className="secondaryBtn"
+                  style={{ marginTop: 12 }}
+                  onClick={() => {
+                    const token = localStorage.getItem('waddani_token');
+                    fetch('/api/portal/membership-card', {
+                      headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    })
+                      .then(async (r) => {
+                        const html = await r.text();
+                        if (!r.ok) throw new Error(html);
+                        const w = window.open('', '_blank');
+                        if (w) {
+                          w.document.write(html);
+                          w.document.close();
+                        }
+                      })
+                      .catch((e: Error) => setError(e.message));
+                  }}
+                >
+                  Print membership card
+                </button>
+              )}
             </div>
           )}
         </Card>

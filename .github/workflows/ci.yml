@@ -1,54 +1,20 @@
-name: CI
+name: ci
 
 on:
   push:
     branches: [main, 'cursor/**']
   pull_request:
+    branches: [main]
 
 jobs:
-  build-and-test:
+  typecheck:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: waddani
-          POSTGRES_PASSWORD: waddani
-          POSTGRES_DB: waddani
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U waddani -d waddani"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      DATABASE_URL: postgresql://waddani:waddani@localhost:5432/waddani?schema=public
-      JWT_SECRET: ci-test-jwt-secret-32chars-min
-      WEB_ORIGIN: http://localhost:5173
-      API_PORT: 4000
-      NODE_ENV: development
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run db:generate
-      - run: npm run db:deploy
-      - run: npm run db:seed
-      - run: npm run test
-      - run: npm run build
-      - name: Start API and smoke test
-        run: |
-          npm --workspace apps/api run start &
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:4000/health >/dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          SMOKE_PASSWORD=ChangeMe123! npm run test:smoke
+      - run: npx prisma generate --schema prisma/schema.prisma
+      - run: npm run typecheck

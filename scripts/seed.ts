@@ -264,12 +264,38 @@ async function main() {
     await prisma.fundraisingCampaign.create({
       data: {
         title: 'National Solidarity Fund',
+        slug: 'national-solidarity-fund',
         description: 'Support Waddani community programmes across Somaliland and the diaspora.',
         targetAmount: 25000,
         currency: 'USD',
         status: 'ACTIVE',
         officeId: hq.id,
       },
+    });
+  } else if (!existingCampaign.slug) {
+    await prisma.fundraisingCampaign.update({
+      where: { id: existingCampaign.id },
+      data: { slug: 'national-solidarity-fund' },
+    });
+  }
+
+  const announcementCount = await prisma.announcement.count();
+  if (announcementCount === 0) {
+    await prisma.announcement.createMany({
+      data: [
+        {
+          title: 'Welcome to the new portals',
+          body: 'Members can RSVP, supporters can give and manage consents, volunteers can update office tasks.',
+          audience: 'ALL',
+          createdById: admin.id,
+        },
+        {
+          title: 'Volunteer weekend briefing',
+          body: 'Check Tasks for neighbourhood outreach and town-hall check-in desk setup.',
+          audience: 'VOLUNTEER',
+          createdById: admin.id,
+        },
+      ],
     });
   }
 

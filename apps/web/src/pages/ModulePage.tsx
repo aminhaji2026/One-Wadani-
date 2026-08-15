@@ -384,10 +384,74 @@ export function ModulePage({ kind }: { kind: keyof typeof cfgs }) {
         </Card>
       )}
       {err && <div className="error">{err}</div>}
+      {kind === 'communications' && <AnnouncementComposer onPosted={() => load()} />}
       <Card title={`${data.length} records`}>
         {data.length ? <Table headers={c.headers} rows={buildRows(kind, data, c, () => load())} /> : <Empty text="No records yet" />}
       </Card>
     </>
+  );
+}
+
+function AnnouncementComposer({ onPosted }: { onPosted: () => void }) {
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [audience, setAudience] = useState('ALL');
+  const [info, setInfo] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <Card title="Portal announcements">
+      <p className="muted">Publish short messages to member, supporter, volunteer, or all portals.</p>
+      <div className="formGrid">
+        <label>
+          <span>Title</span>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label>
+          <span>Audience</span>
+          <select value={audience} onChange={(e) => setAudience(e.target.value)}>
+            <option value="ALL">All portals</option>
+            <option value="STAFF">Staff</option>
+            <option value="MEMBER">Members</option>
+            <option value="SUPPORTER">Supporters</option>
+            <option value="VOLUNTEER">Volunteers</option>
+          </select>
+        </label>
+        <label>
+          <span>Message</span>
+          <input value={body} onChange={(e) => setBody(e.target.value)} />
+        </label>
+      </div>
+      {error && <div className="error">{error}</div>}
+      {info && <div className="notice">{info}</div>}
+      <button
+        type="button"
+        className="primary"
+        disabled={saving}
+        onClick={async () => {
+          setSaving(true);
+          setError('');
+          setInfo('');
+          try {
+            await api('/announcements', {
+              method: 'POST',
+              body: JSON.stringify({ title, body, audience }),
+            });
+            setTitle('');
+            setBody('');
+            setInfo('Announcement published to portals.');
+            onPosted();
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Publish failed');
+          } finally {
+            setSaving(false);
+          }
+        }}
+      >
+        {saving ? 'Publishing…' : 'Publish announcement'}
+      </button>
+    </Card>
   );
 }
 
@@ -722,6 +786,10 @@ export function SecurityPage() {
   const [audit, setAudit] = useState<Record<string, unknown>[]>([]);
   const [privacy, setPrivacy] = useState<Record<string, unknown>[]>([]);
   const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
+  const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
+  const [twoFa, setTwoFa] = useState<{ secret?: string; qrImage?: string; otpauthUrl?: string } | null>(null);
+  const [code, setCode] = useState('');
 
   const load = () => {
     api('/audit').then(setAudit).catch((e: Error) => setErr(e.message));
@@ -734,10 +802,116 @@ export function SecurityPage() {
       <div className="pageTitle">
         <div>
           <h2>Security, Permissions & Audit</h2>
-          <p>Review operational audit history and privacy request handling.</p>
+          <p>Password, 2FA, privacy requests, and exportable audit history.</p>
         </div>
+        <a className="primary actionLink" href="/api/audit/export" onClick={(e) => {
+          e.preventDefault();
+          const token = localStorage.getItem('waddani_token');
+          fetch('/api/audit/export', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+            .then(async (r) => {
+              const text = await r.text();
+              if (!r.ok) throw new Error(text);
+              const blob = new Blob([text], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'waddani-audit.csv';
+              a.click();
+              URL.revokeObjectURL(url);
+            })
+            .catch((ex: Error) => setErr(ex.message));
+        }}>
+          Export audit CSV
+        </a>
       </div>
       {err && <div className="error">{err}</div>}
+      {info && <div className="notice">{info}</div>}
+
+      <div className="grid2">
+        <Card title="Change staff password">
+          <div className="formGrid">
+            <label>
+              <span>Current password</span>
+              <input type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
+            </label>
+            <label>
+              <span>New password</span>
+              <input type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
+            </label>
+            <label>
+              <span>Confirm</span>
+              <input type="password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
+            </label>
+          </div>
+          <button
+            type="button"
+            className="primary"
+            onClick={async () => {
+              setErr('');
+              setInfo('');
+              try {
+                if (pw.next !== pw.confirm) throw new Error('Passwords do not match');
+                const { changePassword } = await import('../lib/api');
+                await changePassword(pw.current, pw.next);
+                setPw({ current: '', next: '', confirm: '' });
+                setInfo('Password updated. Other sessions were revoked.');
+              } catch (e) {
+                setErr(e instanceof Error ? e.message : 'Password update failed');
+              }
+            }}
+          >
+            Update password
+          </button>
+        </Card>
+
+        <Card title="Staff 2FA (authenticator)">
+          <p className="mutedLine">Protect HQ accounts with a TOTP app such as Google Authenticator or 1Password.</p>
+          <div className="btnRow" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className="secondaryBtn"
+              onClick={async () => {
+                setErr('');
+                try {
+                  const setup = await api('/security/2fa/setup', { method: 'POST' });
+                  setTwoFa(setup);
+                  setInfo('Scan the QR, then enter a code to enable 2FA.');
+                } catch (e) {
+                  setErr(e instanceof Error ? e.message : '2FA setup failed');
+                }
+              }}
+            >
+              Start setup
+            </button>
+          </div>
+          {twoFa?.qrImage && (
+            <div className="twoFaBox">
+              <img src={twoFa.qrImage} alt="2FA QR" width={180} height={180} />
+              <p className="mutedLine">Secret: {twoFa.secret}</p>
+              <label>
+                <span>Verification code</span>
+                <input value={code} onChange={(e) => setCode(e.target.value)} />
+              </label>
+              <button
+                type="button"
+                className="primary"
+                onClick={async () => {
+                  try {
+                    await api('/security/2fa/enable', { method: 'POST', body: JSON.stringify({ code }) });
+                    setInfo('2FA enabled for this staff account.');
+                    setTwoFa(null);
+                  } catch (e) {
+                    setErr(e instanceof Error ? e.message : 'Could not enable 2FA');
+                  }
+                }}
+              >
+                Enable 2FA
+              </button>
+            </div>
+          )}
+        </Card>
+      </div>
+
       <div className="grid2">
         <Card title="Recent audit log">
           {audit.length ? (
@@ -782,7 +956,7 @@ export function SecurityPage() {
               ])}
             />
           ) : (
-            <Empty text="No privacy requests yet" />
+            <Empty text="No privacy requests yet — create one when a subject asks for export or erasure." />
           )}
         </Card>
       </div>
