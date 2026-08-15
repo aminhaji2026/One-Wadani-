@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: waddani
+      POSTGRES_PASSWORD: waddani
+      POSTGRES_DB: waddani
+    ports:
+      - "5432:5432"
+    volumes:
+      - waddani_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waddani -d waddani"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://waddani:waddani@db:5432/waddani?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-a-long-random-string}
+      API_PORT: 4000
+      WEB_ORIGIN: http://localhost:8080
+      NODE_ENV: production
+      MOCK_WEBHOOK_SECRET: ${MOCK_WEBHOOK_SECRET:-}
+      ZAAD_BASE_URL: ${ZAAD_BASE_URL:-https://example.invalid}
+      ZAAD_MERCHANT_ID: ${ZAAD_MERCHANT_ID:-}
+      ZAAD_API_KEY: ${ZAAD_API_KEY:-}
+      INTERNATIONAL_GATEWAY: ${INTERNATIONAL_GATEWAY:-mock}
+      INTERNATIONAL_GATEWAY_KEY: ${INTERNATIONAL_GATEWAY_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000/api
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  waddani_db:
