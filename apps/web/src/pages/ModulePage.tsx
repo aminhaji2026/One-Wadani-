@@ -1,15 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../lib/api';
 import { Card, Empty, Table } from '../components/Common';
+
+const AnalyticsCharts = lazy(() => import('../components/Charts').then((m) => ({ default: m.AnalyticsCharts })));
 
 type FormField = {
   label: string;
@@ -59,7 +52,7 @@ const cfgs: Record<string, Cfg> = {
     title: 'Membership & Digital Membership',
     subtitle: 'Register and manage official party members.',
     endpoint: '/members',
-    headers: ['Member No.', 'Name', 'Country', 'Type', 'Status'],
+    headers: ['Member No.', 'Name', 'Country', 'Type', 'Status', 'Actions'],
     row: (x) => [
       String(x.membershipNo),
       `${x.firstName} ${x.lastName}`,
@@ -171,15 +164,26 @@ const cfgs: Record<string, Cfg> = {
     ],
     actions: (x, reload) =>
       x.status === 'PENDING_APPROVAL' ? (
-        <button
-          className="linkish"
-          onClick={async () => {
-            await api(`/communications/${x.id}/approve`, { method: 'POST' });
-            reload();
-          }}
-        >
-          Approve
-        </button>
+        <span className="actionPair">
+          <button
+            className="linkish"
+            onClick={async () => {
+              await api(`/communications/${x.id}/approve`, { method: 'POST' });
+              reload();
+            }}
+          >
+            Approve
+          </button>
+          <button
+            className="linkish dangerLink"
+            onClick={async () => {
+              await api(`/communications/${x.id}/reject`, { method: 'POST' });
+              reload();
+            }}
+          >
+            Reject
+          </button>
+        </span>
       ) : (
         '—'
       ),
@@ -215,6 +219,37 @@ function buildRows(kind: string, data: Record<string, unknown>[], cfg: Cfg, relo
       cfg.actions?.(x, reload) || '—',
     ]);
   }
+  if (kind === 'members') {
+    return data.map((x) => [
+      ...cfg.row(x),
+      x.status === 'PENDING' || x.status === 'INACTIVE' ? (
+        <span className="actionPair" key={String(x.id)}>
+          <button
+            className="linkish"
+            type="button"
+            onClick={async () => {
+              await api(`/members/${x.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'ACTIVE' }) });
+              reload();
+            }}
+          >
+            Activate
+          </button>
+          <button
+            className="linkish dangerLink"
+            type="button"
+            onClick={async () => {
+              await api(`/members/${x.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'REJECTED' }) });
+              reload();
+            }}
+          >
+            Reject
+          </button>
+        </span>
+      ) : (
+        '—'
+      ),
+    ]);
+  }
   return data.map(cfg.row);
 }
 
@@ -225,15 +260,20 @@ export function ModulePage({ kind }: { kind: keyof typeof cfgs }) {
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [err, setErr] = useState('');
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  const searchable = kind === 'members' || kind === 'supporters';
 
-  const load = () =>
-    api(c.endpoint)
+  const load = (q = query) => {
+    const path = searchable && q.trim() ? `${c.endpoint}?q=${encodeURIComponent(q.trim())}` : c.endpoint;
+    return api(path)
       .then(setData)
       .catch((e: Error) => setErr(e.message));
+  };
 
   useEffect(() => {
     setErr('');
-    load();
+    setQuery('');
+    load('');
   }, [c.endpoint]);
 
   const submit = async () => {
@@ -270,6 +310,24 @@ export function ModulePage({ kind }: { kind: keyof typeof cfgs }) {
           </button>
         )}
       </div>
+      {searchable && (
+        <form
+          className="searchBar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            load(query);
+          }}
+        >
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={kind === 'members' ? 'Search members by name, number, or email' : 'Search supporters by name, email, or country'}
+          />
+          <button type="submit" className="secondaryBtn">
+            Search
+          </button>
+        </form>
+      )}
       {open && c.form && (
         <Card title="Create record">
           <div className="formGrid">
@@ -327,7 +385,7 @@ export function ModulePage({ kind }: { kind: keyof typeof cfgs }) {
       )}
       {err && <div className="error">{err}</div>}
       <Card title={`${data.length} records`}>
-        {data.length ? <Table headers={c.headers} rows={buildRows(kind, data, c, load)} /> : <Empty text="No records yet" />}
+        {data.length ? <Table headers={c.headers} rows={buildRows(kind, data, c, () => load())} /> : <Empty text="No records yet" />}
       </Card>
     </>
   );
@@ -775,37 +833,13 @@ export function AnalyticsPage() {
           <strong>{d.volunteers}</strong>
         </div>
       </div>
-      <div className="grid2">
-        <Card title="Country distribution">
-          <div className="chartBox">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={d.supportersByCountry}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5ece8" />
-                <XAxis dataKey="country" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#0c754b" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card title="Financial snapshot">
-          <div className="metricList">
-            <p>
-              <span>Confirmed donations</span>
-              <b>${d.confirmedDonations.toLocaleString()}</b>
-            </p>
-            <p>
-              <span>Approved expenses</span>
-              <b>${d.approvedExpenses.toLocaleString()}</b>
-            </p>
-            <p>
-              <span>Net operational balance (approx.)</span>
-              <b>${(d.confirmedDonations - d.approvedExpenses).toLocaleString()}</b>
-            </p>
-          </div>
-        </Card>
-      </div>
+      <Suspense fallback={<div className="loading">Loading charts…</div>}>
+        <AnalyticsCharts
+          byCountry={d.supportersByCountry}
+          donations={d.confirmedDonations}
+          expenses={d.approvedExpenses}
+        />
+      </Suspense>
     </>
   );
 }

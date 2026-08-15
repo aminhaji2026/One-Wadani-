@@ -183,4 +183,29 @@ r.post(
   }),
 );
 
+r.post(
+  '/campaigns/:id/reject',
+  auth,
+  permit('fundraising.write'),
+  asyncHandler(async (req: AuthRequest, res) => {
+    const existing = await prisma.fundraisingCampaign.findFirst({
+      where: { id: param(req.params.id), ...officeScope(req) },
+    });
+    if (!existing) return res.status(404).json({ error: 'Campaign not found' });
+    if (existing.status !== 'PENDING_APPROVAL') {
+      return res.status(400).json({ error: 'Only pending campaigns can be rejected' });
+    }
+    const x = await prisma.fundraisingCampaign.update({
+      where: { id: existing.id },
+      data: { status: 'REJECTED' },
+    });
+    await prisma.approval.updateMany({
+      where: { fundraisingCampaignId: x.id, status: 'PENDING' },
+      data: { status: 'REJECTED', decidedBy: req.user!.id, decidedAt: new Date() },
+    });
+    await audit(req, 'REJECT', 'FundraisingCampaign', x.id);
+    res.json(x);
+  }),
+);
+
 export default r;

@@ -1,15 +1,10 @@
-import { useEffect, useState } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Card, Stat } from '../components/Common';
+
+const CountryBarChart = lazy(() =>
+  import('../components/Charts').then((m) => ({ default: m.CountryBarChart })),
+);
 
 type DashboardData = {
   members: number;
@@ -23,7 +18,14 @@ type DashboardData = {
   confirmedDonations: number;
   approvedExpenses: number;
   supportersByCountry: { country: string; count: number }[];
-  recentDonations: { id: string; amount: number; currency: string; country: string; campaign: string; createdAt: string }[];
+  recentDonations: {
+    id: string;
+    amount: number;
+    currency: string;
+    country: string;
+    campaign: string;
+    createdAt: string;
+  }[];
 };
 
 export default function Dashboard() {
@@ -71,21 +73,9 @@ export default function Dashboard() {
           </div>
         </Card>
         <Card title="Supporters by country">
-          {d.supportersByCountry.length ? (
-            <div className="chartBox">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={d.supportersByCountry}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5ece8" />
-                  <XAxis dataKey="country" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#168a59" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="empty">No supporter data yet</div>
-          )}
+          <Suspense fallback={<div className="loading">Loading chart…</div>}>
+            <CountryBarChart data={d.supportersByCountry} />
+          </Suspense>
         </Card>
       </div>
       <Card title="Recent confirmed donations">

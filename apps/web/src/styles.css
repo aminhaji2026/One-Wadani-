@@ -371,6 +371,25 @@ th, td {
   to { transform: translate3d(-2%, 2%, 0) scale(1.05); }
 }
 
+.actionPair {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+}
+.dangerLink { color: #a33 !important; }
+.searchBar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.searchBar input {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid #ced9d3;
+  border-radius: 10px;
+  background: white;
+}
+
 @media (max-width: 1100px) {
   .stats { grid-template-columns: repeat(3, 1fr); }
   .stats4 { grid-template-columns: repeat(2, 1fr); }

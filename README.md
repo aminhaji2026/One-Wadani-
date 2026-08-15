@@ -57,10 +57,20 @@ Compose waits for Postgres health, runs Prisma migrations on API boot, and build
 - Auth with JWT, login rate limiting, forced password change, and stronger JWT boot checks
 - Office-scoped list/create flows for members, supporters, staff, finance, events, and fundraising
 - Sequential ID counters for membership, staff, and donation receipts
-- Approval records for fundraising, expenses, and communications
+- Approval and rejection flows for fundraising, expenses, and communications
 - Consent checkboxes for supporters; privacy request completion workflow
+- Member search/activate and donations + budgets screens
 - Mock payments that auto-confirm only outside production; production mock webhooks require `MOCK_WEBHOOK_SECRET`
-- Dashboard/analytics charts and operational UI for events, tasks, staff/volunteers, and approvals
+- Dashboard/analytics charts (lazy-loaded) and operational UI for events, tasks, staff/volunteers
+- Unit tests, API smoke script, and GitHub Actions CI with Postgres
+
+## Scripts
+
+```bash
+npm run build
+npm run test
+npm run test:smoke   # requires API running
+```
 
 ## Payments
 

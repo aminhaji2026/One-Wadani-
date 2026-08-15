@@ -27,10 +27,25 @@ r.get(
   permit('members.read'),
   asyncHandler(async (req, res) => {
     const take = parseLimit(req.query.limit);
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
     const scope = officeScope(req);
     res.json(
       await prisma.member.findMany({
-        where: scope,
+        where: {
+          ...scope,
+          ...(status ? { status: status as 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED' } : {}),
+          ...(q
+            ? {
+                OR: [
+                  { firstName: { contains: q, mode: 'insensitive' } },
+                  { lastName: { contains: q, mode: 'insensitive' } },
+                  { membershipNo: { contains: q, mode: 'insensitive' } },
+                  { email: { contains: q, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
         take,
         orderBy: { createdAt: 'desc' },
         include: { office: true },
@@ -72,9 +87,22 @@ r.get(
   permit('supporters.read'),
   asyncHandler(async (req, res) => {
     const take = parseLimit(req.query.limit);
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
     res.json(
       await prisma.supporter.findMany({
-        where: officeScope(req),
+        where: {
+          ...officeScope(req),
+          ...(q
+            ? {
+                OR: [
+                  { firstName: { contains: q, mode: 'insensitive' } },
+                  { lastName: { contains: q, mode: 'insensitive' } },
+                  { email: { contains: q, mode: 'insensitive' } },
+                  { country: { contains: q, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
         take,
         orderBy: { createdAt: 'desc' },
         include: { consents: true, office: true },
