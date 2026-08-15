@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: waddani
+      POSTGRES_PASSWORD: waddani
+      POSTGRES_DB: waddani
+    ports:
+      - "5432:5432"
+    volumes:
+      - waddani_db:/var/lib/postgresql/data
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+    ports:
+      - "4000:4000"
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      VITE_API_URL: http://localhost:4000/api
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+volumes:
+  waddani_db:
