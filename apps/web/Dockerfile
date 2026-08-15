@@ -4,7 +4,7 @@ COPY package*.json ./
 COPY apps/web/package.json apps/web/package.json
 RUN npm install
 COPY apps/web apps/web
-ARG VITE_API_URL=/api
+ARG VITE_API_URL=https://api-production-6ef1.up.railway.app/api
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm --workspace apps/web run build
 
