@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Card, Empty, ProgressBar, Table } from '../components/Common';
+import { refreshFeaturedCampaignBannerCache } from '../lib/campaignBanner';
 
 type Campaign = {
   id: string;
@@ -106,6 +107,7 @@ export default function FundraisingPage() {
       });
       setOpen(false);
       setForm({});
+      refreshFeaturedCampaignBannerCache();
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Save failed');
@@ -133,6 +135,7 @@ export default function FundraisingPage() {
       });
       setInfo('Campaign banner and message saved.');
       setEditing(null);
+      refreshFeaturedCampaignBannerCache();
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Update failed');

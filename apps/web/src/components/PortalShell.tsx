@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { clearSession, getStoredUser, type PortalKind } from '../lib/api';
 import BrandLogo from './BrandLogo';
 import NotificationBell from './NotificationBell';
+import { useFeaturedCampaignBanner } from '../lib/campaignBanner';
 
 type NavItem = [string, string];
 
@@ -44,32 +45,39 @@ export default function PortalShell({
   const user = getStoredUser();
   const meta = titles[portal];
   const items = navByPortal[portal];
+  const banner = useFeaturedCampaignBanner();
 
   return (
     <div className={`portalShell theme-${portal}`}>
-      <header className="portalHeader">
-        <div className="portalBrand">
-          <BrandLogo variant="mark" />
-          <div>
-            <b>WADDANI ONE</b>
-            <small>
-              {meta.label} · {user?.name}
-            </small>
+      <header
+        className={`portalHeader${banner ? ' hasBanner' : ''}`}
+        style={banner ? { backgroundImage: `url(${banner.imageUrl})` } : undefined}
+      >
+        <div className="headerShade portalHeaderShade">
+          <div className="portalBrand">
+            <BrandLogo variant="mark" />
+            <div>
+              <b>WADDANI ONE</b>
+              <small>
+                {meta.label} · {user?.name}
+                {banner ? ` · ${banner.title}` : ''}
+              </small>
+            </div>
           </div>
-        </div>
-        <div className="portalHeaderActions">
-          <span className="portalPill">{meta.subtitle}</span>
-          <NotificationBell />
-          <button
-            type="button"
-            className="secondaryBtn"
-            onClick={() => {
-              clearSession();
-              window.location.assign('/');
-            }}
-          >
-            Sign out
-          </button>
+          <div className="portalHeaderActions">
+            <span className="portalPill">{banner ? banner.title : meta.subtitle}</span>
+            <NotificationBell />
+            <button
+              type="button"
+              className="secondaryBtn"
+              onClick={() => {
+                clearSession();
+                window.location.assign('/');
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 

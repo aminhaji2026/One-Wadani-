@@ -88,42 +88,36 @@ export default function PublicCampaignPage() {
 
   return (
     <div className="portalShell publicCampaignPage">
-      <header className="portalHeader">
-        <div className="portalBrand">
-          <BrandLogo variant="mark" />
-          <div>
-            <b>WADDANI ONE</b>
-            <small>Public campaign</small>
+      <header
+        className={`portalHeader campaignHeaderBanner${campaign?.imageUrl ? ' hasBanner' : ''}`}
+        style={campaign?.imageUrl ? { backgroundImage: `url(${campaign.imageUrl})` } : undefined}
+      >
+        <div className="headerShade portalHeaderShade">
+          <div className="portalBrand">
+            <BrandLogo variant="mark" />
+            <div>
+              <b>WADDANI ONE</b>
+              <small>Public campaign</small>
+            </div>
           </div>
+          <Link className="secondaryBtn" to="/">
+            Sign in
+          </Link>
         </div>
-        <Link className="secondaryBtn" to="/">
-          Sign in
-        </Link>
-      </header>
-
-      {campaign?.imageUrl && (
-        <div className="campaignBanner" style={{ backgroundImage: `url(${campaign.imageUrl})` }} role="img" aria-label={campaign.title}>
-          <div className="campaignBannerShade">
+        {campaign && (
+          <div className="campaignBannerShade inHeader">
             <p className="eyebrow">Waddani fundraising</p>
             <h1>{campaign.title}</h1>
             <p>{campaign.description}</p>
           </div>
-        </div>
-      )}
+        )}
+      </header>
 
       <main className="portalMain">
         {error && <div className="error">{error}</div>}
         {!campaign && !error && <div className="loading">Loading campaign…</div>}
         {campaign && (
           <>
-            {!campaign.imageUrl && (
-              <section className="heroBand">
-                <div className="eyebrow">Fundraising</div>
-                <h2>{campaign.title}</h2>
-                <p>{campaign.description}</p>
-              </section>
-            )}
-
             {campaign.message ? (
               <section className="campaignMessage">
                 <h2>Campaign message</h2>
