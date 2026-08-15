@@ -1,5 +1,6 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/railway?schema=public"
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY prisma prisma
