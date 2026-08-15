@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { clearSession, getStoredUser } from '../lib/api';
 import BrandLogo from './BrandLogo';
 
@@ -20,6 +20,12 @@ const items: [string, string][] = [
 export default function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const user = getStoredUser();
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
 
   return (
     <div className="shell">
@@ -58,11 +64,15 @@ export default function Layout({ children }: { children: ReactNode }) {
               Menu
             </button>
             <div>
-              <h1>Waddani Management System</h1>
-              <p>Somaliland National Party operations, membership, fundraising and communications</p>
+              <h1>Waddani One</h1>
+              <p>
+                {greeting}
+                {user?.name ? `, ${user.name.split(' ')[0]}` : ''}. National party operations across membership,
+                fundraising, and the field.
+              </p>
             </div>
           </div>
-          <div className="badge">HQ Console</div>
+          <div className="badge">Live HQ</div>
         </header>
         {children}
       </main>

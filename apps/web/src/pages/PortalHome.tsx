@@ -1,21 +1,50 @@
 import { useEffect, useState } from 'react';
 import { api, clearSession, getStoredUser } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
-import { Card, Empty, Table } from '../components/Common';
+import { Card, Empty, ProgressBar, Table } from '../components/Common';
 
 type PortalHomeData = {
   portal: string;
   cards?: { label: string; value?: string | null }[];
   upcomingEvents?: { id: string; title: string; startsAt: string; venue?: string | null }[];
-  activeCampaigns?: { id: string; title: string; raisedAmount: string | number; targetAmount: string | number; currency: string }[];
+  activeCampaigns?: {
+    id: string;
+    title: string;
+    raisedAmount: string | number;
+    targetAmount: string | number;
+    currency: string;
+  }[];
   openTasks?: { id: string; title: string; priority: string; status: string }[];
   profile?: Record<string, unknown>;
+};
+
+const portalCopy: Record<string, { eyebrow: string; title: string; blurb: string }> = {
+  member: {
+    eyebrow: 'Member portal',
+    title: 'Your membership, events, and community',
+    blurb: 'Stay close to Waddani programmes, gatherings, and your digital membership record.',
+  },
+  supporter: {
+    eyebrow: 'Supporter portal',
+    title: 'Campaigns you can back with confidence',
+    blurb: 'Follow active fundraising and keep your consent preferences respected.',
+  },
+  volunteer: {
+    eyebrow: 'Volunteer portal',
+    title: 'Field tasks ready for action',
+    blurb: 'See open assignments for your office and keep the ground game moving.',
+  },
 };
 
 export default function PortalHome() {
   const user = getStoredUser();
   const [data, setData] = useState<PortalHomeData | null>(null);
   const [error, setError] = useState('');
+  const copy = portalCopy[user?.portal || ''] || {
+    eyebrow: 'Community portal',
+    title: 'Welcome to Waddani One',
+    blurb: 'Your personal space for Xisbiga Waddani.',
+  };
 
   useEffect(() => {
     api('/portal/home')
@@ -29,8 +58,10 @@ export default function PortalHome() {
         <div className="portalBrand">
           <BrandLogo variant="mark" />
           <div>
-            <b>Waddani One</b>
-            <small>{user?.portal || 'portal'} · {user?.name}</small>
+            <b>WADDANI ONE</b>
+            <small>
+              {user?.portal || 'portal'} · {user?.name}
+            </small>
           </div>
         </div>
         <button
@@ -46,15 +77,17 @@ export default function PortalHome() {
       </header>
 
       <main className="portalMain">
-        <div className="pageTitle">
-          <div>
-            <h2>Welcome{user?.name ? `, ${user.name}` : ''}</h2>
-            <p>Your {user?.portal || 'community'} portal for Xisbiga Waddani.</p>
-          </div>
-        </div>
+        <section className="heroBand">
+          <div className="eyebrow">{copy.eyebrow}</div>
+          <h2>
+            {user?.name ? `${user.name.split(' ')[0]}, ` : ''}
+            {copy.title}
+          </h2>
+          <p>{copy.blurb}</p>
+        </section>
 
         {error && <div className="error">{error}</div>}
-        {!data && !error && <div className="loading">Loading portal…</div>}
+        {!data && !error && <div className="loading">Opening your portal…</div>}
 
         {data?.cards && (
           <div className="stats stats4">
@@ -79,7 +112,7 @@ export default function PortalHome() {
                 ])}
               />
             ) : (
-              <Empty text="No published events yet" />
+              <Empty text="No published events yet — check back soon." />
             )}
           </Card>
         )}
@@ -87,16 +120,26 @@ export default function PortalHome() {
         {data?.portal === 'supporter' && (
           <Card title="Active fundraising campaigns">
             {data.activeCampaigns?.length ? (
-              <Table
-                headers={['Campaign', 'Raised', 'Target']}
-                rows={data.activeCampaigns.map((c) => [
-                  c.title,
-                  `${c.currency} ${Number(c.raisedAmount).toLocaleString()}`,
-                  `${c.currency} ${Number(c.targetAmount).toLocaleString()}`,
-                ])}
-              />
+              <div className="campaignRail">
+                {data.activeCampaigns.map((c) => {
+                  const raised = Number(c.raisedAmount);
+                  const target = Number(c.targetAmount) || 1;
+                  const pct = Math.min(100, Math.round((raised / target) * 100));
+                  return (
+                    <div className="campaignRow" key={c.id}>
+                      <div className="campaignRowHead">
+                        <strong>{c.title}</strong>
+                        <span>
+                          {c.currency} {raised.toLocaleString()} / {target.toLocaleString()}
+                        </span>
+                      </div>
+                      <ProgressBar value={pct} />
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <Empty text="No active campaigns" />
+              <Empty text="No active campaigns right now." />
             )}
           </Card>
         )}
@@ -109,7 +152,7 @@ export default function PortalHome() {
                 rows={data.openTasks.map((t) => [t.title, t.priority, t.status])}
               />
             ) : (
-              <Empty text="No open tasks assigned to your office" />
+              <Empty text="No open tasks assigned to your office yet." />
             )}
           </Card>
         )}

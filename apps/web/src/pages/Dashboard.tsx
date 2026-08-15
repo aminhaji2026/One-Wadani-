@@ -43,6 +43,14 @@ export default function Dashboard() {
 
   return (
     <>
+      <section className="heroBand">
+        <div className="eyebrow">Command centre</div>
+        <h2>Momentum across the movement</h2>
+        <p>
+          Track membership growth, supporter reach, fundraising pulse, and field activity in one live view.
+        </p>
+      </section>
+
       <div className="stats">
         <Stat label="Members" value={d.members} />
         <Stat label="Supporters" value={d.supporters} />
@@ -59,7 +67,7 @@ export default function Dashboard() {
               <b>{d.activeCampaigns}</b>
             </p>
             <p>
-              <span>Published/upcoming events</span>
+              <span>Published / upcoming events</span>
               <b>{d.upcomingEvents}</b>
             </p>
             <p>
@@ -93,13 +101,13 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="empty">No confirmed donations yet</div>
+          <div className="empty">No confirmed donations yet — record one from Fundraising.</div>
         )}
       </Card>
       <Card title="Platform safeguards">
         <div className="notice">
-          This build uses consent-based supporter communications and aggregate operational analytics. It intentionally
-          does not implement clan profiling, covert political-affiliation inference or sensitive persuasion scoring.
+          Consent-based supporter communications and aggregate operational analytics only. This build does not implement
+          clan profiling, covert affiliation inference, or sensitive persuasion scoring.
         </div>
       </Card>
     </>

@@ -22,6 +22,15 @@ export function Stat({ label, value, sub }: { label: string; value: string | num
   );
 }
 
+export function ProgressBar({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, value));
+  return (
+    <div className="progressTrack" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+      <div className="progressFill" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
 export function Empty({ text }: { text: string }) {
   return <div className="empty">{text}</div>;
 }

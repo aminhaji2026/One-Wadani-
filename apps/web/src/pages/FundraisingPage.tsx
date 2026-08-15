@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { Card, Empty, Table } from '../components/Common';
+import { Card, Empty, ProgressBar, Table } from '../components/Common';
 
 type Campaign = {
   id: string;
@@ -126,17 +126,23 @@ export default function FundraisingPage() {
 
   return (
     <>
+      <section className="heroBand">
+        <div className="eyebrow">Fundraising</div>
+        <h2>Power campaigns with Somali mobile money and Stripe</h2>
+        <p>ZAAD, eDahab, Premier, MyCash, Sifalo, and Stripe — collect in demo mode now, go live with API keys later.</p>
+      </section>
+
       <div className="pageTitle">
         <div>
-          <h2>Fundraising & Donations</h2>
-          <p>Campaigns plus ZAAD, eDahab, Premier, MyCash, Sifalo and Stripe payment gateways.</p>
+          <h2>Campaigns & donations</h2>
+          <p>Approve campaigns, take donations, and watch raised amounts move in real time.</p>
         </div>
         <div className="btnRow">
           <button type="button" className="secondaryBtn" onClick={() => setDonateOpen(!donateOpen)}>
-            {donateOpen ? 'Cancel donation' : '+ Record donation'}
+            {donateOpen ? 'Cancel donation' : 'Record donation'}
           </button>
           <button type="button" onClick={() => setOpen(!open)}>
-            {open ? 'Cancel' : '+ New campaign'}
+            {open ? 'Cancel' : 'New campaign'}
           </button>
         </div>
       </div>
@@ -151,6 +157,29 @@ export default function FundraisingPage() {
           ))}
         </div>
       </Card>
+
+      {activeCampaigns.length > 0 && (
+        <Card title="Campaign momentum">
+          <div className="campaignRail">
+            {activeCampaigns.map((c) => {
+              const raised = Number(c.raisedAmount);
+              const target = Number(c.targetAmount) || 1;
+              const pct = Math.min(100, Math.round((raised / target) * 100));
+              return (
+                <div className="campaignRow" key={c.id}>
+                  <div className="campaignRowHead">
+                    <strong>{c.title}</strong>
+                    <span>
+                      {pct}% · {c.currency} {raised.toLocaleString()} / {target.toLocaleString()}
+                    </span>
+                  </div>
+                  <ProgressBar value={pct} />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {donateOpen && (
         <Card title="Collect donation">
