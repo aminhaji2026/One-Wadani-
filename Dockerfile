@@ -5,7 +5,7 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 # Bust Metal builder cache when source changes are not picked up.
-ARG CACHE_BUST=portal-audit-fix-20260815
+ARG CACHE_BUST=password-persist-20260815
 RUN echo "cache_bust=${CACHE_BUST}"
 COPY prisma prisma
 RUN npm ci
@@ -26,7 +26,7 @@ ENV NODE_ENV=production
 RUN apk add --no-cache openssl
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
-ARG CACHE_BUST=portal-audit-fix-20260815
+ARG CACHE_BUST=password-persist-20260815
 RUN echo "cache_bust=${CACHE_BUST}"
 COPY prisma prisma
 COPY scripts scripts

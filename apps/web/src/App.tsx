@@ -35,10 +35,6 @@ export default function App() {
     return (
       <ChangePassword
         onDone={() => {
-          const user = getStoredUser();
-          if (user) {
-            localStorage.setItem('waddani_user', JSON.stringify({ ...user, mustChangePassword: false }));
-          }
           setMustChange(false);
         }}
       />

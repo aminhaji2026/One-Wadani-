@@ -115,17 +115,22 @@ async function main() {
     },
   });
 
-  const hash = await bcrypt.hash('ChangeMe123!', 12);
+  const demoPassword = 'ChangeMe123!';
+  const hash = await bcrypt.hash(demoPassword, 12);
+  const resetPasswords = process.env.SEED_RESET_PASSWORDS === 'true';
+
+  const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin@waddani.local' } });
   const admin = await prisma.user.upsert({
     where: { email: 'admin@waddani.local' },
     update: {
-      passwordHash: hash,
-      mustChangePassword: true,
       status: 'ACTIVE',
       officeId: hq.id,
       firstName: 'System',
       lastName: 'Administrator',
       locale: 'en',
+      ...(resetPasswords || !existingAdmin
+        ? { passwordHash: hash, mustChangePassword: true }
+        : {}),
     },
     create: {
       email: 'admin@waddani.local',
@@ -148,18 +153,17 @@ async function main() {
   await prisma.idCounter.upsert({ where: { name: 'staff' }, update: {}, create: { name: 'staff', value: 0 } });
   await prisma.idCounter.upsert({ where: { name: 'donation' }, update: {}, create: { name: 'donation', value: 0 } });
 
-  const portalHash = await bcrypt.hash('ChangeMe123!', 12);
+  const portalHash = hash;
 
   await prisma.member.upsert({
     where: { email: 'member@waddani.local' },
     update: {
-      passwordHash: portalHash,
       portalEnabled: true,
-      mustChangePassword: true,
       status: 'ACTIVE',
       firstName: 'Amina',
       lastName: 'Hassan',
       officeId: hq.id,
+      ...(resetPasswords ? { passwordHash: portalHash, mustChangePassword: true } : {}),
     },
     create: {
       membershipNo: 'WD-2026-PORTAL1',
@@ -179,13 +183,12 @@ async function main() {
   await prisma.supporter.upsert({
     where: { email: 'supporter@waddani.local' },
     update: {
-      passwordHash: portalHash,
       portalEnabled: true,
-      mustChangePassword: true,
       status: 'ACTIVE',
       firstName: 'Omar',
       lastName: 'Ali',
       officeId: hq.id,
+      ...(resetPasswords ? { passwordHash: portalHash, mustChangePassword: true } : {}),
     },
     create: {
       email: 'supporter@waddani.local',
@@ -205,14 +208,13 @@ async function main() {
   await prisma.volunteer.upsert({
     where: { email: 'volunteer@waddani.local' },
     update: {
-      passwordHash: portalHash,
       portalEnabled: true,
-      mustChangePassword: true,
       status: 'ACTIVE',
       firstName: 'Leyla',
       lastName: 'Mohamed',
       skills: ['Outreach', 'Events'],
       officeId: hq.id,
+      ...(resetPasswords ? { passwordHash: portalHash, mustChangePassword: true } : {}),
     },
     create: {
       email: 'volunteer@waddani.local',
@@ -230,12 +232,11 @@ async function main() {
   const staffUser = await prisma.user.upsert({
     where: { email: 'staff@waddani.local' },
     update: {
-      passwordHash: portalHash,
-      mustChangePassword: true,
       status: 'ACTIVE',
       officeId: hq.id,
       firstName: 'Hodan',
       lastName: 'Yusuf',
+      ...(resetPasswords ? { passwordHash: portalHash, mustChangePassword: true } : {}),
     },
     create: {
       email: 'staff@waddani.local',
@@ -332,12 +333,16 @@ async function main() {
   }
 
   console.log('Seed complete.');
-  console.log('Staff admin: admin@waddani.local / ChangeMe123!');
-  console.log('Staff user:  staff@waddani.local / ChangeMe123!');
-  console.log('Member:      member@waddani.local / ChangeMe123!');
-  console.log('Supporter:   supporter@waddani.local / ChangeMe123!');
-  console.log('Volunteer:   volunteer@waddani.local / ChangeMe123!');
-  console.log('Change passwords immediately after first login.');
+  if (resetPasswords || !existingAdmin) {
+    console.log('Demo password for new/reset accounts: ChangeMe123!');
+  } else {
+    console.log('Existing account passwords were preserved (set SEED_RESET_PASSWORDS=true to reset).');
+  }
+  console.log('Staff admin: admin@waddani.local');
+  console.log('Staff user:  staff@waddani.local');
+  console.log('Member:      member@waddani.local');
+  console.log('Supporter:   supporter@waddani.local');
+  console.log('Volunteer:   volunteer@waddani.local');
 }
 
 main()

@@ -67,8 +67,14 @@ export async function login(email: string, password: string, portal: PortalKind 
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {
-  return api('/auth/change-password', {
+  const data = await api('/auth/change-password', {
     method: 'POST',
-    body: JSON.stringify({ currentPassword, newPassword }),
+    body: JSON.stringify({
+      currentPassword: currentPassword.trim(),
+      newPassword: newPassword.trim(),
+    }),
   });
+  if (data.token) localStorage.setItem('waddani_token', data.token);
+  if (data.user) localStorage.setItem('waddani_user', JSON.stringify(data.user));
+  return data;
 }

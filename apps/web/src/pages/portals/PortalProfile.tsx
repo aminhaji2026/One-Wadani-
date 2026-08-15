@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, getStoredUser, type PortalKind } from '../../lib/api';
+import { api, changePassword, getStoredUser, type PortalKind } from '../../lib/api';
 import { Card } from '../../components/Common';
 
 type Profile = Record<string, unknown> & {
@@ -22,9 +22,11 @@ export default function PortalProfile({ portal }: { portal: Exclude<PortalKind, 
   const user = getStoredUser();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState({ phone: '', city: '', preferredLanguage: 'so', skills: '' });
+  const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [saving, setSaving] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     api('/portal/profile')
@@ -68,12 +70,29 @@ export default function PortalProfile({ portal }: { portal: Exclude<PortalKind, 
     }
   };
 
+  const savePassword = async () => {
+    setPwSaving(true);
+    setError('');
+    setInfo('');
+    try {
+      if (pw.next.trim() !== pw.confirm.trim()) throw new Error('New passwords do not match');
+      if (pw.next.trim().length < 10) throw new Error('New password must be at least 10 characters');
+      await changePassword(pw.current, pw.next);
+      setPw({ current: '', next: '', confirm: '' });
+      setInfo('Password updated. Use the new password next time you sign in.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Password update failed');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
   return (
     <>
       <section className="heroBand">
         <div className="eyebrow">{portal} profile</div>
         <h2>{portal === 'member' ? 'Your digital membership card' : 'Your portal profile'}</h2>
-        <p>Keep contact details current so offices and campaigns can reach you properly.</p>
+        <p>Keep contact details current and change your password any time from this page.</p>
       </section>
       {error && <div className="error">{error}</div>}
       {info && <div className="notice">{info}</div>}
@@ -164,6 +183,41 @@ export default function PortalProfile({ portal }: { portal: Exclude<PortalKind, 
           </button>
         </Card>
       </div>
+
+      <Card title="Change password">
+        <div className="formGrid">
+          <label>
+            <span>Current password</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={pw.current}
+              onChange={(e) => setPw({ ...pw, current: e.target.value })}
+            />
+          </label>
+          <label>
+            <span>New password (min 10)</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={pw.next}
+              onChange={(e) => setPw({ ...pw, next: e.target.value })}
+            />
+          </label>
+          <label>
+            <span>Confirm new password</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={pw.confirm}
+              onChange={(e) => setPw({ ...pw, confirm: e.target.value })}
+            />
+          </label>
+        </div>
+        <button type="button" className="primary" disabled={pwSaving} onClick={savePassword}>
+          {pwSaving ? 'Updating…' : 'Update password'}
+        </button>
+      </Card>
     </>
   );
 }

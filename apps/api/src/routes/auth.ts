@@ -37,8 +37,9 @@ r.post(
       return res.status(400).json({ error: 'Invalid email, password, or portal' });
     }
 
-    const email = parsed.data.email.toLowerCase();
-    const { password, portal } = parsed.data;
+    const email = parsed.data.email.toLowerCase().trim();
+    const password = parsed.data.password.trim();
+    const { portal } = parsed.data;
 
     if (portal === 'staff') {
       const user = await prisma.user.findUnique({ where: { email } });
@@ -151,49 +152,100 @@ r.post(
       })
       .parse(req.body);
 
+    const currentPassword = parsed.currentPassword.trim();
+    const newPassword = parsed.newPassword.trim();
+    if (newPassword.length < 10) {
+      return res.status(400).json({ error: 'New password must be at least 10 characters' });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'New password must be different from the current password' });
+    }
+
     const portal = req.user!.portal;
     const id = req.user!.id;
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    let userPayload: Record<string, unknown>;
 
     if (portal === 'staff') {
       const user = await prisma.user.findUnique({ where: { id } });
-      if (!user || !(await bcrypt.compare(parsed.currentPassword, user.passwordHash))) {
+      if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
-      await prisma.user.update({
+      const updated = await prisma.user.update({
         where: { id },
-        data: { passwordHash: await bcrypt.hash(parsed.newPassword, 12), mustChangePassword: false },
+        data: { passwordHash, mustChangePassword: false },
       });
+      userPayload = {
+        id: updated.id,
+        portal: 'staff' as const,
+        name: `${updated.firstName} ${updated.lastName}`,
+        locale: updated.locale,
+        mustChangePassword: false,
+        officeId: updated.officeId,
+        email: updated.email,
+      };
     } else if (portal === 'member') {
       const member = await prisma.member.findUnique({ where: { id } });
-      if (!member?.passwordHash || !(await bcrypt.compare(parsed.currentPassword, member.passwordHash))) {
+      if (!member?.passwordHash || !(await bcrypt.compare(currentPassword, member.passwordHash))) {
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
-      await prisma.member.update({
+      const updated = await prisma.member.update({
         where: { id },
-        data: { passwordHash: await bcrypt.hash(parsed.newPassword, 12), mustChangePassword: false },
+        data: { passwordHash, mustChangePassword: false },
       });
+      userPayload = {
+        id: updated.id,
+        portal: 'member' as const,
+        name: `${updated.firstName} ${updated.lastName}`,
+        mustChangePassword: false,
+        officeId: updated.officeId,
+        email: updated.email,
+        membershipNo: updated.membershipNo,
+        status: updated.status,
+      };
     } else if (portal === 'supporter') {
       const supporter = await prisma.supporter.findUnique({ where: { id } });
-      if (!supporter?.passwordHash || !(await bcrypt.compare(parsed.currentPassword, supporter.passwordHash))) {
+      if (!supporter?.passwordHash || !(await bcrypt.compare(currentPassword, supporter.passwordHash))) {
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
-      await prisma.supporter.update({
+      const updated = await prisma.supporter.update({
         where: { id },
-        data: { passwordHash: await bcrypt.hash(parsed.newPassword, 12), mustChangePassword: false },
+        data: { passwordHash, mustChangePassword: false },
       });
+      userPayload = {
+        id: updated.id,
+        portal: 'supporter' as const,
+        name: `${updated.firstName} ${updated.lastName || ''}`.trim(),
+        mustChangePassword: false,
+        officeId: updated.officeId,
+        email: updated.email,
+        status: updated.status,
+      };
     } else {
       const volunteer = await prisma.volunteer.findUnique({ where: { id } });
-      if (!volunteer?.passwordHash || !(await bcrypt.compare(parsed.currentPassword, volunteer.passwordHash))) {
+      if (!volunteer?.passwordHash || !(await bcrypt.compare(currentPassword, volunteer.passwordHash))) {
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
-      await prisma.volunteer.update({
+      const updated = await prisma.volunteer.update({
         where: { id },
-        data: { passwordHash: await bcrypt.hash(parsed.newPassword, 12), mustChangePassword: false },
+        data: { passwordHash, mustChangePassword: false },
       });
+      userPayload = {
+        id: updated.id,
+        portal: 'volunteer' as const,
+        name: `${updated.firstName} ${updated.lastName || ''}`.trim(),
+        mustChangePassword: false,
+        officeId: updated.officeId,
+        email: updated.email,
+        status: updated.status,
+        skills: updated.skills,
+      };
     }
 
     await audit(req, 'UPDATE', 'PortalPassword', id, undefined, { portal, mustChangePassword: false });
-    res.json({ ok: true });
+    const token = signToken(id, portal);
+    res.json({ ok: true, token, user: userPayload });
   }),
 );
 

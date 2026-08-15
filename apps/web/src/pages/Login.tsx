@@ -124,7 +124,10 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
               {loading ? 'Signing in…' : active.cta}
             </button>
             {error && <div className="error">{error}</div>}
-            <small>Demo password: ChangeMe123!. Pick a portal above, then sign in.</small>
+            <small>
+              First-time demo accounts use ChangeMe123! until you change it. After you set a new password, that new
+              password is kept across deploys — use the same portal panel you registered with.
+            </small>
           </form>
         </div>
       </section>
