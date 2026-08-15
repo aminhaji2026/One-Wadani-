@@ -1,5 +1,6 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import EventBanner from './EventBanner';
 
 export default function SiteShell() {
   const [scrolled, setScrolled] = useState(false);
@@ -17,6 +18,7 @@ export default function SiteShell() {
       <a className="skip" href="#main">
         Skip to content
       </a>
+      <EventBanner />
       <header className={`siteNav ${scrolled ? 'is-scrolled' : ''}`}>
         <div className="siteNavInner">
           <Link to="/" className="siteBrand" aria-label="Waddani home">
