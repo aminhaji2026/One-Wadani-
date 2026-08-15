@@ -198,6 +198,8 @@ r.get(
         slug: true,
         title: true,
         description: true,
+        message: true,
+        imageUrl: true,
         targetAmount: true,
         raisedAmount: true,
         currency: true,

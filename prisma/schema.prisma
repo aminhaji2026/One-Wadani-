@@ -285,6 +285,7 @@ model FundraisingCampaign {
   title       String
   slug        String?        @unique
   description String
+  message     String         @default("")
   targetAmount Decimal       @db.Decimal(18,2)
   currency    String         @default("USD")
   raisedAmount Decimal       @default(0) @db.Decimal(18,2)

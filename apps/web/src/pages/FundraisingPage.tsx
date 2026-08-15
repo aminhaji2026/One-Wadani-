@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Card, Empty, ProgressBar, Table } from '../components/Common';
+import { refreshFeaturedCampaignBannerCache } from '../lib/campaignBanner';
 
 type Campaign = {
   id: string;
   title: string;
   description: string;
+  message?: string | null;
+  imageUrl?: string | null;
   targetAmount: string | number;
   raisedAmount: string | number;
   currency: string;
@@ -29,13 +32,26 @@ type Donation = {
 
 type Gateway = { id: string; label: string; configured: boolean; demoMode: boolean };
 
+async function fileToDataUrl(file: File): Promise<string> {
+  if (file.size > 1_200_000) throw new Error('Banner image must be under 1.2MB');
+  if (!file.type.startsWith('image/')) throw new Error('Banner must be an image file');
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read image'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function FundraisingPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [open, setOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [editing, setEditing] = useState<Campaign | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [donate, setDonate] = useState<Record<string, string>>({ gateway: 'zaad', currency: 'USD' });
   const [err, setErr] = useState('');
   const [info, setInfo] = useState('');
@@ -61,6 +77,19 @@ export default function FundraisingPage() {
     load();
   }, []);
 
+  const startEdit = (c: Campaign) => {
+    setEditing(c);
+    setOpen(false);
+    setEditForm({
+      title: c.title || '',
+      description: c.description || '',
+      message: c.message || '',
+      imageUrl: c.imageUrl || '',
+      targetAmount: String(c.targetAmount ?? ''),
+      currency: c.currency || 'USD',
+    });
+  };
+
   const submit = async () => {
     setSaving(true);
     setErr('');
@@ -70,15 +99,46 @@ export default function FundraisingPage() {
         body: JSON.stringify({
           title: form.title,
           description: form.description,
+          message: form.message || '',
+          imageUrl: form.imageUrl || undefined,
           targetAmount: Number(form.targetAmount),
           currency: form.currency || 'USD',
         }),
       });
       setOpen(false);
       setForm({});
+      refreshFeaturedCampaignBannerCache();
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    setErr('');
+    setInfo('');
+    try {
+      await api(`/fundraising/${editing.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: editForm.title,
+          description: editForm.description,
+          message: editForm.message || '',
+          imageUrl: editForm.imageUrl || null,
+          targetAmount: Number(editForm.targetAmount),
+          currency: editForm.currency || 'USD',
+        }),
+      });
+      setInfo('Campaign banner and message saved.');
+      setEditing(null);
+      refreshFeaturedCampaignBannerCache();
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Update failed');
     } finally {
       setSaving(false);
     }
@@ -129,20 +189,26 @@ export default function FundraisingPage() {
     <>
       <section className="heroBand">
         <div className="eyebrow">Fundraising</div>
-        <h2>Power campaigns with Somali mobile money and Stripe</h2>
-        <p>ZAAD, eDahab, Premier, MyCash, Sifalo, and Stripe — collect in demo mode now, go live with API keys later.</p>
+        <h2>Power campaigns with banners, messages, and mobile money</h2>
+        <p>Edit campaign imagery and copy any time. Collect via ZAAD, eDahab, Premier, MyCash, Sifalo, or Stripe.</p>
       </section>
 
       <div className="pageTitle">
         <div>
           <h2>Campaigns & donations</h2>
-          <p>Approve campaigns, take donations, and watch raised amounts move in real time.</p>
+          <p>Approve campaigns, refresh banners and messages, take donations, and watch raised amounts move.</p>
         </div>
         <div className="btnRow">
           <button type="button" className="secondaryBtn" onClick={() => setDonateOpen(!donateOpen)}>
             {donateOpen ? 'Cancel donation' : 'Record donation'}
           </button>
-          <button type="button" onClick={() => setOpen(!open)}>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null);
+              setOpen(!open);
+            }}
+          >
             {open ? 'Cancel' : 'New campaign'}
           </button>
         </div>
@@ -168,6 +234,9 @@ export default function FundraisingPage() {
               const pct = Math.min(100, Math.round((raised / target) * 100));
               return (
                 <div className="campaignRow" key={c.id}>
+                  {c.imageUrl && (
+                    <div className="campaignThumb" style={{ backgroundImage: `url(${c.imageUrl})` }} aria-hidden="true" />
+                  )}
                   <div className="campaignRowHead">
                     <strong>{c.title}</strong>
                     <span>
@@ -254,13 +323,129 @@ export default function FundraisingPage() {
               <input value={form.currency || 'USD'} onChange={(e) => setForm({ ...form, currency: e.target.value })} />
             </label>
             <label>
-              <span>Description</span>
+              <span>Short description</span>
               <input value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </label>
+            <label className="fullWidth">
+              <span>Campaign message</span>
+              <textarea
+                rows={4}
+                value={form.message || ''}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                placeholder="Longer story supporters will read on the campaign page"
+              />
+            </label>
+            <label className="fullWidth">
+              <span>Banner image URL</span>
+              <input
+                value={form.imageUrl || ''}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                placeholder="https://… or upload a file below"
+              />
+            </label>
+            <label className="fullWidth">
+              <span>Or upload banner image</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await fileToDataUrl(file);
+                    setForm({ ...form, imageUrl: dataUrl });
+                  } catch (ex) {
+                    setErr(ex instanceof Error ? ex.message : 'Image upload failed');
+                  }
+                }}
+              />
+            </label>
+            {form.imageUrl && (
+              <div className="bannerPreview" style={{ backgroundImage: `url(${form.imageUrl})` }} aria-label="Banner preview" />
+            )}
           </div>
           <button className="primary" type="button" disabled={saving} onClick={submit}>
             {saving ? 'Saving…' : 'Save'}
           </button>
+        </Card>
+      )}
+
+      {editing && (
+        <Card title={`Edit campaign · ${editing.title}`}>
+          <div className="formGrid">
+            <label>
+              <span>Title</span>
+              <input value={editForm.title || ''} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+            </label>
+            <label>
+              <span>Target amount</span>
+              <input
+                type="number"
+                value={editForm.targetAmount || ''}
+                onChange={(e) => setEditForm({ ...editForm, targetAmount: e.target.value })}
+              />
+            </label>
+            <label>
+              <span>Currency</span>
+              <input value={editForm.currency || 'USD'} onChange={(e) => setEditForm({ ...editForm, currency: e.target.value })} />
+            </label>
+            <label>
+              <span>Short description</span>
+              <input
+                value={editForm.description || ''}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+            </label>
+            <label className="fullWidth">
+              <span>Campaign message (editable)</span>
+              <textarea
+                rows={5}
+                value={editForm.message || ''}
+                onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+              />
+            </label>
+            <label className="fullWidth">
+              <span>Banner image URL</span>
+              <input
+                value={editForm.imageUrl || ''}
+                onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })}
+                placeholder="https://… or upload below"
+              />
+            </label>
+            <label className="fullWidth">
+              <span>Upload new banner</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await fileToDataUrl(file);
+                    setEditForm({ ...editForm, imageUrl: dataUrl });
+                  } catch (ex) {
+                    setErr(ex instanceof Error ? ex.message : 'Image upload failed');
+                  }
+                }}
+              />
+            </label>
+            {editForm.imageUrl && (
+              <div className="bannerPreview" style={{ backgroundImage: `url(${editForm.imageUrl})` }} aria-label="Banner preview" />
+            )}
+          </div>
+          <div className="btnRow">
+            <button className="primary" type="button" disabled={saving} onClick={saveEdit}>
+              {saving ? 'Saving…' : 'Save banner & message'}
+            </button>
+            <button type="button" className="secondaryBtn" onClick={() => setEditing(null)}>
+              Cancel
+            </button>
+            {editForm.imageUrl && (
+              <button type="button" className="secondaryBtn" onClick={() => setEditForm({ ...editForm, imageUrl: '' })}>
+                Remove banner
+              </button>
+            )}
+          </div>
         </Card>
       )}
 
@@ -270,37 +455,49 @@ export default function FundraisingPage() {
       <Card title={`${campaigns.length} campaigns`}>
         {campaigns.length ? (
           <Table
-            headers={['Campaign', 'Target', 'Raised', 'Status', 'Actions']}
+            headers={['Campaign', 'Banner', 'Target', 'Raised', 'Status', 'Actions']}
             rows={campaigns.map((x) => [
-              x.title,
+              <div key={`${x.id}-title`}>
+                <strong>{x.title}</strong>
+                {x.message ? <div className="mutedLine">{x.message.slice(0, 80)}{x.message.length > 80 ? '…' : ''}</div> : null}
+              </div>,
+              x.imageUrl ? (
+                <div key={`${x.id}-img`} className="campaignThumb sm" style={{ backgroundImage: `url(${x.imageUrl})` }} />
+              ) : (
+                '—'
+              ),
               `${x.currency} ${Number(x.targetAmount).toLocaleString()}`,
               `${x.currency} ${Number(x.raisedAmount).toLocaleString()}`,
               x.status,
-              x.status === 'PENDING_APPROVAL' ? (
-                <span className="actionPair" key={x.id}>
-                  <button
-                    className="linkish"
-                    type="button"
-                    onClick={async () => {
-                      await api(`/campaigns/${x.id}/approve`, { method: 'POST' });
-                      load();
-                    }}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="linkish dangerLink"
-                    type="button"
-                    onClick={async () => {
-                      await api(`/campaigns/${x.id}/reject`, { method: 'POST' });
-                      load();
-                    }}
-                  >
-                    Reject
-                  </button>
-                </span>
-              ) : x.status === 'ACTIVE' ? (
-                <span className="actionPair" key={x.id}>
+              <span className="actionPair" key={x.id}>
+                <button className="linkish" type="button" onClick={() => startEdit(x)}>
+                  Edit banner/message
+                </button>
+                {x.status === 'PENDING_APPROVAL' ? (
+                  <>
+                    <button
+                      className="linkish"
+                      type="button"
+                      onClick={async () => {
+                        await api(`/campaigns/${x.id}/approve`, { method: 'POST' });
+                        load();
+                      }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="linkish dangerLink"
+                      type="button"
+                      onClick={async () => {
+                        await api(`/campaigns/${x.id}/reject`, { method: 'POST' });
+                        load();
+                      }}
+                    >
+                      Reject
+                    </button>
+                  </>
+                ) : null}
+                {x.status === 'ACTIVE' ? (
                   <button
                     className="linkish"
                     type="button"
@@ -319,10 +516,8 @@ export default function FundraisingPage() {
                   >
                     Copy public link
                   </button>
-                </span>
-              ) : (
-                '—'
-              ),
+                ) : null}
+              </span>,
             ])}
           />
         ) : (

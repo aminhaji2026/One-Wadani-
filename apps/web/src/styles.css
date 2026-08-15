@@ -176,6 +176,51 @@ header {
   margin-bottom: 26px;
   gap: 16px;
   animation: rise 0.5s var(--ease) both;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+header.hasBanner {
+  border-bottom: 0;
+  margin: 0 -30px 26px;
+  padding: 0;
+  min-height: 168px;
+  border-radius: 0 0 22px 22px;
+  align-items: stretch;
+}
+.headerShade {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 26px 30px 22px;
+}
+header.hasBanner .headerShade {
+  background: linear-gradient(105deg, rgba(15, 23, 42, 0.78) 8%, rgba(15, 23, 42, 0.42) 55%, rgba(15, 23, 42, 0.55) 100%);
+  color: #fff7ed;
+  min-height: inherit;
+}
+header.hasBanner h1 { color: #fff7ed; }
+header.hasBanner p { color: rgba(255, 247, 237, 0.88); }
+header.hasBanner .badge {
+  background: rgba(255, 247, 237, 0.16);
+  color: #fff7ed;
+  border-color: rgba(255, 247, 237, 0.28);
+}
+header.hasBanner .langSwitch button {
+  color: #fff7ed;
+  border-color: rgba(255, 247, 237, 0.3);
+}
+header.hasBanner .langSwitch button.active {
+  background: rgba(255, 247, 237, 0.2);
+}
+header.hasBanner .secondaryBtn,
+header.hasBanner .notifBell .secondaryBtn {
+  background: rgba(255, 247, 237, 0.14);
+  color: #fff7ed;
+  border-color: rgba(255, 247, 237, 0.28);
 }
 .headerLead { display: flex; align-items: center; gap: 12px; }
 header h1 {
@@ -752,11 +797,46 @@ tbody tr:hover { background: rgba(255, 102, 0, 0.04); }
   padding: 16px 24px;
   border-bottom: 1px solid var(--line);
   background: rgba(255, 252, 250, 0.82);
+  background-size: cover;
+  background-position: center;
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 10;
   animation: rise 0.45s var(--ease) both;
+}
+.portalHeader.hasBanner {
+  display: block;
+  padding: 0;
+  border-bottom: 0;
+  backdrop-filter: none;
+  min-height: 200px;
+}
+.portalHeaderShade {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.portalHeader.hasBanner .portalHeaderShade {
+  padding: 16px 24px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(15, 23, 42, 0.35) 100%);
+  color: #fff7ed;
+}
+.portalHeader.hasBanner .portalBrand b,
+.portalHeader.hasBanner .portalBrand small {
+  color: #fff7ed;
+}
+.portalHeader.hasBanner .portalPill {
+  background: rgba(255, 247, 237, 0.16);
+  border-color: rgba(255, 247, 237, 0.28);
+  color: #fff7ed;
+}
+.portalHeader.hasBanner .secondaryBtn {
+  background: rgba(255, 247, 237, 0.14);
+  color: #fff7ed;
+  border-color: rgba(255, 247, 237, 0.28);
 }
 .portalHeaderActions {
   display: flex;
@@ -1173,3 +1253,103 @@ header .langSwitch { margin-left: 8px; }
   background: rgba(255,255,255,0.72);
 }
 .muted { color: var(--muted); }
+
+.campaignThumb {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+}
+.campaignThumb.sm {
+  width: 72px;
+  height: 44px;
+  margin: 0;
+  border-radius: 8px;
+}
+.bannerPreview {
+  grid-column: 1 / -1;
+  min-height: 160px;
+  border-radius: 14px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--line);
+}
+.formGrid .fullWidth { grid-column: 1 / -1; }
+.formGrid textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+  background: #fff;
+}
+.campaignBanner {
+  width: 100%;
+  min-height: min(52vh, 420px);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.campaignHeaderBanner.hasBanner {
+  min-height: min(58vh, 460px);
+  position: relative;
+  top: auto;
+}
+.campaignHeaderBanner.hasBanner .campaignBannerShade.inHeader {
+  position: relative;
+  padding: clamp(28px, 5vw, 52px) clamp(24px, 5vw, 48px) clamp(32px, 5vw, 56px);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.05) 0%, rgba(15, 23, 42, 0.78) 100%);
+}
+.campaignBannerShade {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: clamp(24px, 5vw, 48px);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.15) 10%, rgba(15, 23, 42, 0.78) 100%);
+  color: #fff7ed;
+}
+.campaignBannerShade .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  opacity: 0.9;
+  margin: 0;
+}
+.campaignBannerShade h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  max-width: 16ch;
+}
+.campaignBannerShade p {
+  margin: 0;
+  max-width: 42ch;
+  color: rgba(255, 247, 237, 0.88);
+}
+.campaignMessage {
+  margin-bottom: 18px;
+}
+.campaignMessage h2 {
+  font-family: var(--font-display);
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+}
+.campaignMessage p {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--ink);
+  line-height: 1.55;
+  max-width: 62ch;
+}
+.publicCampaignPage .portalHeader {
+  margin-bottom: 0;
+}
+

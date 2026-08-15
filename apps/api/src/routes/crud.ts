@@ -261,14 +261,23 @@ r.post(
       .object({
         title: z.string().min(1),
         description: z.string().min(1),
+        message: z.string().max(8000).optional(),
         targetAmount: z.coerce.number().positive(),
         currency: z.string().default('USD'),
+        imageUrl: z.string().max(2_000_000).optional(),
         officeId: z.string().optional(),
       })
       .parse(req.body);
+    if (p.imageUrl && p.imageUrl.startsWith('data:') && p.imageUrl.length > 1_500_000) {
+      return res.status(400).json({ error: 'Banner image is too large (max ~1MB)' });
+    }
     const x = await prisma.fundraisingCampaign.create({
       data: {
-        ...p,
+        title: p.title,
+        description: p.description,
+        message: p.message || '',
+        imageUrl: p.imageUrl || null,
+        currency: p.currency,
         officeId: p.officeId ?? req.user!.officeId ?? undefined,
         status: 'PENDING_APPROVAL',
         targetAmount: p.targetAmount,
@@ -285,6 +294,52 @@ r.post(
     });
     await audit(req, 'CREATE', 'FundraisingCampaign', x.id, undefined, { title: x.title, status: x.status });
     res.status(201).json(x);
+  }),
+);
+
+r.patch(
+  '/fundraising/:id',
+  permit('fundraising.write'),
+  asyncHandler(async (req: AuthRequest, res) => {
+    const id = param(req.params.id);
+    const p = z
+      .object({
+        title: z.string().min(1).max(160).optional(),
+        description: z.string().min(1).max(500).optional(),
+        message: z.string().max(8000).optional(),
+        imageUrl: z.union([z.string().max(2_000_000), z.null()]).optional(),
+        targetAmount: z.coerce.number().positive().optional(),
+        currency: z.string().min(3).max(8).optional(),
+        videoUrl: z.union([z.string().url().max(500), z.literal(''), z.null()]).optional(),
+      })
+      .parse(req.body);
+
+    const existing = await prisma.fundraisingCampaign.findFirst({
+      where: { id, ...officeScope(req) },
+    });
+    if (!existing) return res.status(404).json({ error: 'Campaign not found' });
+
+    if (typeof p.imageUrl === 'string' && p.imageUrl.startsWith('data:') && p.imageUrl.length > 1_500_000) {
+      return res.status(400).json({ error: 'Banner image is too large (max ~1MB)' });
+    }
+
+    const updated = await prisma.fundraisingCampaign.update({
+      where: { id },
+      data: {
+        title: p.title,
+        description: p.description,
+        message: p.message,
+        imageUrl: p.imageUrl === '' ? null : p.imageUrl,
+        targetAmount: p.targetAmount,
+        currency: p.currency,
+        videoUrl: p.videoUrl === '' ? null : p.videoUrl,
+      },
+      include: { office: true },
+    });
+    await audit(req, 'UPDATE', 'FundraisingCampaign', id, undefined, {
+      fields: Object.keys(p),
+    });
+    res.json(updated);
   }),
 );
 

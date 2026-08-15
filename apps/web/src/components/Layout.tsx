@@ -4,6 +4,7 @@ import { clearSession, getStoredUser } from '../lib/api';
 import BrandLogo from './BrandLogo';
 import NotificationBell from './NotificationBell';
 import { useI18n } from '../lib/i18n';
+import { useFeaturedCampaignBanner } from '../lib/campaignBanner';
 
 const items: [string, string][] = [
   ['/', 'Command Centre'],
@@ -24,6 +25,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const user = getStoredUser();
   const { t, lang, setLang } = useI18n();
+  const banner = useFeaturedCampaignBanner();
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -65,30 +67,37 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <main>
-        <header>
-          <div className="headerLead">
-            <button className="navToggle" type="button" aria-label="Toggle navigation" onClick={() => setOpen((v) => !v)}>
-              Menu
-            </button>
-            <div>
-              <h1>Waddani One</h1>
-              <p>
-                {greeting}
-                {user?.name ? `, ${user.name.split(' ')[0]}` : ''}. {t('approvals')} and national operations in one
-                workspace.
-              </p>
+        <header
+          className={banner ? 'hasBanner' : undefined}
+          style={banner ? { backgroundImage: `url(${banner.imageUrl})` } : undefined}
+        >
+          <div className="headerShade">
+            <div className="headerLead">
+              <button className="navToggle" type="button" aria-label="Toggle navigation" onClick={() => setOpen((v) => !v)}>
+                Menu
+              </button>
+              <div>
+                <h1>Waddani One</h1>
+                <p>
+                  {greeting}
+                  {user?.name ? `, ${user.name.split(' ')[0]}` : ''}.{' '}
+                  {banner
+                    ? `${banner.title} — ${t('approvals')} and national operations in one workspace.`
+                    : `${t('approvals')} and national operations in one workspace.`}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="headerTrail">
-            <div className="badge">{roleLabel}</div>
-            <NotificationBell />
-            <div className="langSwitch compact">
-              <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>
-                EN
-              </button>
-              <button type="button" className={lang === 'so' ? 'active' : ''} onClick={() => setLang('so')}>
-                SO
-              </button>
+            <div className="headerTrail">
+              <div className="badge">{roleLabel}</div>
+              <NotificationBell />
+              <div className="langSwitch compact">
+                <button type="button" className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>
+                  EN
+                </button>
+                <button type="button" className={lang === 'so' ? 'active' : ''} onClick={() => setLang('so')}>
+                  SO
+                </button>
+              </div>
             </div>
           </div>
         </header>
