@@ -1,5 +1,6 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/railway?schema=public"
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY prisma prisma
@@ -11,11 +12,13 @@ RUN npx prisma generate --schema prisma/schema.prisma && npm --workspace apps/ap
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=4000
+COPY package*.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY prisma prisma
+COPY scripts scripts
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/scripts ./scripts
 COPY apps/api/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 EXPOSE 4000

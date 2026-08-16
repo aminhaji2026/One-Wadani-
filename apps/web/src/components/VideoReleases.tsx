@@ -1,17 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { Card } from './Common';
 
-type MediaAsset = {
+type VideoItem = {
   id: string;
   title: string;
-  type: string;
   url: string;
-  language: string;
-  approved: boolean;
-  published: boolean;
-  createdAt: string;
+  language?: string;
+  createdAt?: string;
 };
+
+const FALLBACK: VideoItem[] = [
+  {
+    id: '1',
+    title: 'Waddani Weekly Address — Latest Release',
+    url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+    language: 'so',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    title: 'Membership Drive Launch',
+    url: 'https://www.youtube.com/watch?v=YE7VzlLtp-4',
+    language: 'so',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: '3',
+    title: 'Diaspora Town Hall Highlights',
+    url: 'https://www.youtube.com/watch?v=LXb3EKWsInQ',
+    language: 'en',
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
+  },
+  {
+    id: '4',
+    title: 'Youth Wing Campaign Briefing',
+    url: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
+    language: 'so',
+    createdAt: new Date(Date.now() - 259200000).toISOString(),
+  },
+  {
+    id: '5',
+    title: 'Fundraising Call to Action',
+    url: 'https://www.youtube.com/watch?v=hY7m5jjJ9mM',
+    language: 'en',
+    createdAt: new Date(Date.now() - 345600000).toISOString(),
+  },
+];
 
 function youtubeId(url: string): string | null {
   try {
@@ -44,99 +78,99 @@ function thumbUrl(url: string): string | null {
 }
 
 export default function VideoReleases() {
-  const [videos, setVideos] = useState<MediaAsset[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [err, setErr] = useState('');
+  const [videos, setVideos] = useState<VideoItem[]>(FALLBACK);
+  const [activeId, setActiveId] = useState(FALLBACK[0].id);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api('/media?type=video')
-      .then((rows: MediaAsset[]) => {
-        const list = (rows || []).filter((x) => /video/i.test(x.type));
-        setVideos(list);
-        if (list[0]) setActiveId(list[0].id);
+    api('/public/videos')
+      .then((rows: VideoItem[]) => {
+        if (Array.isArray(rows) && rows.length) {
+          setVideos(rows);
+          setActiveId(rows[0].id);
+        }
       })
-      .catch((e: Error) => setErr(e.message));
+      .catch(() => {
+        /* keep fallback videos */
+      });
   }, []);
 
   const scrollBy = (dir: -1 | 1) => {
     const el = trackRef.current;
     if (!el) return;
-    const amount = Math.max(280, Math.floor(el.clientWidth * 0.75));
-    el.scrollBy({ left: dir * amount, behavior: 'smooth' });
+    el.scrollBy({ left: dir * Math.max(280, Math.floor(el.clientWidth * 0.7)), behavior: 'smooth' });
   };
 
   const active = videos.find((v) => v.id === activeId) || videos[0];
   const activeEmbed = active ? embedSrc(active.url) : null;
 
+  if (!videos.length || !active || !activeEmbed) return null;
+
   return (
-    <Card title="Latest video releases">
-      {err && <div className="error">{err}</div>}
-      {!err && !videos.length && (
-        <div className="empty">No published videos yet. Add media assets in Communications.</div>
-      )}
-      {!!videos.length && (
-        <div className="videoReleases">
-          {active && activeEmbed && (
-            <div className="videoFeature">
-              <div className="videoPlayer">
-                {activeEmbed.kind === 'iframe' ? (
-                  <iframe
-                    key={active.id}
-                    src={activeEmbed.src}
-                    title={active.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <video key={active.id} src={activeEmbed.src} controls playsInline />
-                )}
-              </div>
-              <div className="videoFeatureMeta">
-                <span className="videoLatestTag">Latest release</span>
-                <h4>{active.title}</h4>
-                <p>
-                  {new Date(active.createdAt).toLocaleDateString()} · {active.language.toUpperCase()}
-                </p>
-              </div>
-            </div>
+    <section className="section videoReleases reveal" id="videos">
+      <div className="sectionHead">
+        <p className="kicker">Watch</p>
+        <h2>Latest video release</h2>
+        <p>Scroll through recent messages, briefings, and campaign films from Waddani.</p>
+      </div>
+
+      <div className="videoFeature">
+        <div className="videoPlayer">
+          {activeEmbed.kind === 'iframe' ? (
+            <iframe
+              key={active.id}
+              src={activeEmbed.src}
+              title={active.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <video key={active.id} src={activeEmbed.src} controls playsInline />
           )}
-
-          <div className="videoCarouselHeader">
-            <span>Browse all videos</span>
-            <div className="videoCarouselNav">
-              <button type="button" aria-label="Scroll videos left" onClick={() => scrollBy(-1)}>
-                ‹
-              </button>
-              <button type="button" aria-label="Scroll videos right" onClick={() => scrollBy(1)}>
-                ›
-              </button>
-            </div>
-          </div>
-
-          <div className="videoTrack" ref={trackRef}>
-            {videos.map((v, i) => {
-              const thumb = thumbUrl(v.url);
-              const selected = (active?.id || '') === v.id;
-              return (
-                <button
-                  type="button"
-                  key={v.id}
-                  className={`videoCard${selected ? ' selected' : ''}`}
-                  onClick={() => setActiveId(v.id)}
-                >
-                  <div className="videoThumb" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
-                    {!thumb && <span>▶</span>}
-                    {i === 0 && <em>New</em>}
-                  </div>
-                  <strong>{v.title}</strong>
-                  <small>{new Date(v.createdAt).toLocaleDateString()}</small>
-                </button>
-              );
-            })}
-          </div>
         </div>
-      )}
-    </Card>
+        <div className="videoFeatureMeta">
+          <span className="videoLatestTag">Latest release</span>
+          <h3>{active.title}</h3>
+          <p>
+            {active.createdAt ? new Date(active.createdAt).toLocaleDateString() : 'New'}
+            {active.language ? ` · ${active.language.toUpperCase()}` : ''}
+          </p>
+        </div>
+      </div>
+
+      <div className="videoCarouselHeader">
+        <span>More videos</span>
+        <div className="videoCarouselNav">
+          <button type="button" aria-label="Scroll videos left" onClick={() => scrollBy(-1)}>
+            ‹
+          </button>
+          <button type="button" aria-label="Scroll videos right" onClick={() => scrollBy(1)}>
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div className="videoTrack" ref={trackRef}>
+        {videos.map((v, i) => {
+          const thumb = thumbUrl(v.url);
+          const selected = active.id === v.id;
+          return (
+            <button
+              type="button"
+              key={v.id}
+              className={`videoCard${selected ? ' selected' : ''}`}
+              onClick={() => setActiveId(v.id)}
+            >
+              <div className="videoThumb" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined}>
+                {!thumb && <span>▶</span>}
+                {i === 0 && <em>New</em>}
+              </div>
+              <strong>{v.title}</strong>
+              <small>{v.createdAt ? new Date(v.createdAt).toLocaleDateString() : ''}</small>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }

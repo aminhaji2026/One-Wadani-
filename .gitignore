@@ -7,4 +7,3 @@ coverage
 *.log
 .DS_Store
 apps/web/dist
-*.tsbuildinfo

@@ -1,5 +1,7 @@
 # Waddani Party Operations & Support Platform
 
+Public party website (Join / Donate / Take action) plus a staff operations console, restyled after democrats.org and labour.org.uk with Waddani orange branding.
+
 Full-stack starter covering 10 integrated modules:
 
 1. Organisation & Worldwide Office Management
@@ -27,7 +29,8 @@ npm run db:seed
 npm run dev
 ```
 
-Web: http://localhost:5173
+Web: http://localhost:5173  
+Public site: `/` · Join: `/join` · Donate: `/donate` · Staff login: `/login` · Console: `/console`  
 API: http://localhost:4000
 
 Seeded administrator:

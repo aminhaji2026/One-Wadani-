@@ -22,10 +22,9 @@ async function main() {
     { title: 'Membership Drive Launch', type: 'video', url: 'https://www.youtube.com/watch?v=YE7VzlLtp-4', language: 'so' },
     { title: 'Diaspora Town Hall Highlights', type: 'video', url: 'https://www.youtube.com/watch?v=LXb3EKWsInQ', language: 'en' },
     { title: 'Youth Wing Campaign Briefing', type: 'video', url: 'https://www.youtube.com/watch?v=ScMzIvxBSi4', language: 'so' },
-    { title: 'Fundraising Call to Action', type: 'video', url: 'https://www.youtube.com/watch?v=hY7m5jjJ9mM', language: 'en' }
+    { title: 'Fundraising Call to Action', type: 'video', url: 'https://www.youtube.com/watch?v=hY7m5jjJ9mM', language: 'en' },
   ];
-  const existingVideos = await prisma.mediaAsset.count({ where: { type: 'video' } });
-  if (existingVideos === 0) {
+  if ((await prisma.mediaAsset.count({ where: { type: 'video' } })) === 0) {
     for (const [i, video] of sampleVideos.entries()) {
       await prisma.mediaAsset.create({
         data: {
@@ -33,8 +32,8 @@ async function main() {
           approved: true,
           published: true,
           createdById: admin.id,
-          createdAt: new Date(Date.now() - i * 36e5 * 24)
-        }
+          createdAt: new Date(Date.now() - i * 86400000),
+        },
       });
     }
   }
