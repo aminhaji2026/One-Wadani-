@@ -25,6 +25,20 @@ function nextChargeDate(interval: 'MONTHLY' | 'WEEKLY', from = new Date()) {
   return d;
 }
 
+r.get('/videos', async (_req, res) => {
+  try {
+    const rows = await prisma.mediaAsset.findMany({
+      where: { type: { equals: 'video', mode: 'insensitive' }, published: true },
+      orderBy: { createdAt: 'desc' },
+      take: 24,
+      select: { id: true, title: true, url: true, language: true, createdAt: true },
+    });
+    res.json(rows);
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || 'Failed to load videos' });
+  }
+});
+
 r.get('/campaigns', async (_req, res) => {
   const rows = await prisma.fundraisingCampaign.findMany({
     where: { status: 'ACTIVE' },
