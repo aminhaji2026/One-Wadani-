@@ -1710,6 +1710,20 @@ td {
   font-size: 14px;
 }
 
+.videoFacebookLink {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--orange-deep);
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 2px solid rgba(212, 85, 0, 0.35);
+  padding-bottom: 2px;
+}
+
+.videoFacebookLink:hover {
+  border-bottom-color: var(--orange);
+}
+
 .videoLatestTag {
   display: inline-block;
   background: var(--orange);
