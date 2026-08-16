@@ -64,12 +64,18 @@ export default function Home() {
           <div>
             <p className="kicker">Take action</p>
             <h2>Looking to get involved?</h2>
-            <p>Find events and volunteer opportunities near you. Help us organise, register supporters, and win with integrity.</p>
+            <p>Find events, claim volunteer shifts, support a campaign fund, and track impact — all in one place.</p>
           </div>
           <div className="actionRow">
-            <a className="actionLink" href="#events">
-              Find events &amp; actions
-            </a>
+            <Link className="actionLink" to="/action">
+              Open action hub
+            </Link>
+            <Link className="actionLink" to="/events">
+              Find events
+            </Link>
+            <Link className="actionLink" to="/donate">
+              Donate
+            </Link>
             <Link className="actionLink" to="/join">
               Join the party
             </Link>

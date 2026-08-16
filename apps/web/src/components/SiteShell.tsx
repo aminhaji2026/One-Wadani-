@@ -45,9 +45,10 @@ export default function SiteShell() {
             </button>
             <nav className={open ? 'is-open' : ''} onClick={() => setOpen(false)}>
               <Link to="/polls">Polls</Link>
-              <a href="/#action">Take action</a>
-              <a href="/#plan">Our plan</a>
-              <a href="/#news">News</a>
+              <Link to="/action">Take action</Link>
+              <Link to="/events">Events</Link>
+              <Link to="/campaigns">Campaigns</Link>
+              <Link to="/impact">Impact</Link>
               <Link to="/join">Join</Link>
               <Link to="/donate" className="navCta">
                 Donate
@@ -78,7 +79,9 @@ export default function SiteShell() {
             <h4>Get involved</h4>
             <Link to="/join">Become a member</Link>
             <Link to="/donate">Donate</Link>
-            <a href="/#action">Find events</a>
+            <Link to="/events">Find events</Link>
+            <Link to="/action">Volunteer shifts</Link>
+            <Link to="/impact">Impact</Link>
           </div>
           <div>
             <h4>Platform</h4>

@@ -1,5 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Thermometer from './Thermometer';
+import { CampaignSummary, PublicEvent, publicApi, whenLabel } from '../lib/publicApi';
+
+const FALLBACK_IMAGES = [
+  '/events/event-rally.jpg',
+  '/events/event-meeting.jpg',
+  '/events/event-diaspora.jpg',
+  '/events/event-youth.jpg',
+  '/events/event-speech.jpg',
+  '/events/event-march.jpg',
+];
 
 type Notice = {
   id: string;
@@ -7,86 +18,89 @@ type Notice = {
   detail: string;
   when: string;
   where: string;
-  tag: 'Today' | 'Soon' | 'Upcoming';
+  tag: 'Today' | 'Soon' | 'Upcoming' | 'Past';
   image: string;
 };
 
-const NOTICES: Notice[] = [
-  {
-    id: 'rally',
-    title: 'National rally — Hargeisa',
-    detail: 'Join organisers and supporters for a city-wide rally on jobs, services, and honest government.',
-    when: 'Sat 22 Aug · 4:00 PM',
-    where: 'Freedom Square, Hargeisa',
-    tag: 'Soon',
-    image: '/events/event-rally.jpg',
-  },
-  {
-    id: 'meeting',
-    title: 'Branch organising meeting',
-    detail: 'Local coordinators meet to plan canvassing routes, volunteer shifts, and membership follow-ups.',
-    when: 'Tue 18 Aug · 6:30 PM',
-    where: 'Borama Local Office',
-    tag: 'Today',
-    image: '/events/event-meeting.jpg',
-  },
-  {
-    id: 'diaspora',
-    title: 'Diaspora campaign night',
-    detail: 'Online town hall for overseas supporters covering consent-based updates and volunteer pathways.',
-    when: 'Thu 20 Aug · 8:00 PM',
-    where: 'Online / Zoom',
-    tag: 'Soon',
-    image: '/events/event-diaspora.jpg',
-  },
-  {
-    id: 'youth',
-    title: 'Youth volunteer canvass',
-    detail: 'Youth wing door-knocking day — register supporters and share the plan for opportunity everywhere.',
-    when: 'Sun 23 Aug · 10:00 AM',
-    where: 'Berbera Community Hall',
-    tag: 'Upcoming',
-    image: '/events/event-youth.jpg',
-  },
-  {
-    id: 'speech',
-    title: 'Leadership address',
-    detail: 'Public address on lowering living costs, protecting services, and rebuilding trust in public life.',
-    when: 'Fri 28 Aug · 5:00 PM',
-    where: 'National HQ courtyard',
-    tag: 'Upcoming',
-    image: '/events/event-speech.jpg',
-  },
-  {
-    id: 'march',
-    title: 'Evening solidarity march',
-    detail: 'Peaceful evening march with branches, volunteers, and families standing together for fair chance.',
-    when: 'Sat 29 Aug · 7:00 PM',
-    where: 'Central Avenue route',
-    tag: 'Upcoming',
-    image: '/events/event-march.jpg',
-  },
-];
+function tagFor(startsAt: string, upcoming?: boolean): Notice['tag'] {
+  const d = new Date(startsAt);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (!upcoming && d < now) return 'Past';
+  if (sameDay) return 'Today';
+  const days = (d.getTime() - now.getTime()) / 86400000;
+  if (days <= 4) return 'Soon';
+  return 'Upcoming';
+}
 
 export default function EventsNoticeBoard() {
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [campaign, setCampaign] = useState<CampaignSummary | null>(null);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
-    if (NOTICES.length < 2) return;
-    const id = window.setInterval(() => setActive((i) => (i + 1) % NOTICES.length), 4800);
-    return () => window.clearInterval(id);
+    publicApi<PublicEvent[]>('/events')
+      .then((rows) => {
+        const mapped: Notice[] = rows.slice(0, 8).map((e, i) => ({
+          id: e.id,
+          title: e.title,
+          detail: e.description || 'Join organisers and supporters.',
+          when: whenLabel(e.startsAt),
+          where: [e.venue, e.office?.name].filter(Boolean).join(' · ') || 'TBA',
+          tag: tagFor(e.startsAt, e.upcoming),
+          image: e.imageUrl || FALLBACK_IMAGES[i % FALLBACK_IMAGES.length],
+        }));
+        setNotices(mapped.length ? mapped : []);
+      })
+      .catch(() => setNotices([]));
+    publicApi<CampaignSummary[]>('/campaigns')
+      .then((rows) => setCampaign(rows[0] || null))
+      .catch(() => setCampaign(null));
   }, []);
 
-  const featured = NOTICES[active];
-  const ticker = [...NOTICES, ...NOTICES];
+  useEffect(() => {
+    if (notices.length < 2) return;
+    const id = window.setInterval(() => setActive((i) => (i + 1) % notices.length), 4800);
+    return () => window.clearInterval(id);
+  }, [notices.length]);
+
+  const featured = notices[active];
+  const ticker = useMemo(() => [...notices, ...notices], [notices]);
+
+  if (!featured) {
+    return (
+      <section className="section eventsNotice reveal" id="events" aria-label="Events notice board">
+        <div className="sectionHead">
+          <p className="kicker">Events notice board</p>
+          <h2>Coming up across Waddani</h2>
+          <p>Loading live events…</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="section eventsNotice reveal" id="events" aria-label="Events notice board">
       <div className="sectionHead">
         <p className="kicker">Events notice board</p>
         <h2>Coming up across Waddani</h2>
-        <p>Rallies, branch meetings, diaspora calls, and volunteer actions — updated as they are announced.</p>
+        <p>Live from the operations platform — rallies, branch meetings, diaspora calls, and volunteer actions.</p>
       </div>
+
+      {campaign && (
+        <div className="noticeThermo">
+          <div>
+            <p className="kicker">Live fund</p>
+            <h3>
+              <Link to={`/campaigns/${campaign.slug}`}>{campaign.title}</Link>
+            </h3>
+          </div>
+          <Thermometer raised={campaign.raisedAmount} target={campaign.targetAmount} currency={campaign.currency} donors={campaign.donorCount} compact />
+          <Link className="btn btnPrimary" to={`/donate?campaign=${campaign.slug}`}>
+            Donate
+          </Link>
+        </div>
+      )}
 
       <div className="eventsNoticeBoard">
         <article key={featured.id} className="eventsNoticeFeature">
@@ -96,9 +110,7 @@ export default function EventsNoticeBoard() {
           </div>
           <div className="eventsNoticeCopy">
             <div className="eventsNoticeMeta">
-              <span className={`eventsNoticeTag eventsNoticeTag--${featured.tag.toLowerCase()}`}>
-                {featured.tag}
-              </span>
+              <span className={`eventsNoticeTag eventsNoticeTag--${featured.tag.toLowerCase()}`}>{featured.tag}</span>
               <span className="eventsNoticePulse" aria-hidden="true" />
               <time>{featured.when}</time>
             </div>
@@ -106,18 +118,15 @@ export default function EventsNoticeBoard() {
             <p>{featured.detail}</p>
             <div className="eventsNoticeFoot">
               <span>{featured.where}</span>
-              <Link to="/join" className="eventsNoticeCta">
-                Get involved →
+              <Link to={`/events/${featured.id}`} className="eventsNoticeCta">
+                View &amp; RSVP →
               </Link>
             </div>
           </div>
         </article>
 
         <div className="eventsNoticeTicker" aria-hidden="true">
-          <div
-            className="eventsNoticeTickerTrack"
-            style={{ animationDuration: `${Math.max(18, NOTICES.length * 5)}s` }}
-          >
+          <div className="eventsNoticeTickerTrack" style={{ animationDuration: `${Math.max(18, notices.length * 5)}s` }}>
             {ticker.map((item, i) => (
               <div className="eventsNoticeTickerItem" key={`${item.id}-${i}`}>
                 <img src={item.image} alt="" />
@@ -129,7 +138,7 @@ export default function EventsNoticeBoard() {
         </div>
 
         <div className="eventsNoticeDots" role="tablist" aria-label="Select event notice">
-          {NOTICES.map((item, i) => (
+          {notices.map((item, i) => (
             <button
               key={item.id}
               type="button"
@@ -141,6 +150,14 @@ export default function EventsNoticeBoard() {
             />
           ))}
         </div>
+      </div>
+      <div className="heroCtas" style={{ marginTop: 22 }}>
+        <Link to="/events" className="btn btnGhost">
+          All events
+        </Link>
+        <Link to="/action#shifts" className="btn btnGhost">
+          Volunteer shifts
+        </Link>
       </div>
     </section>
   );

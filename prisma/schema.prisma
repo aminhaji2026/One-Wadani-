@@ -81,6 +81,25 @@ enum ConsentType {
   ELECTION_INFORMATION
 }
 
+enum RecurringInterval {
+  MONTHLY
+  WEEKLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  PAST_DUE
+  CANCELLED
+}
+
+enum ShiftStatus {
+  OPEN
+  FULL
+  CANCELLED
+  COMPLETED
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -234,13 +253,17 @@ model Volunteer {
   status    PersonStatus @default(ACTIVE)
   officeId  String?
   office    Office?      @relation(fields: [officeId], references: [id])
+  shiftSignups VolunteerShiftSignup[]
   createdAt DateTime     @default(now())
 }
 
 model FundraisingCampaign {
   id          String         @id @default(cuid())
+  slug        String?        @unique
   title       String
   description String
+  story       String?
+  shareText   String?
   targetAmount Decimal       @db.Decimal(18,2)
   currency    String         @default("USD")
   raisedAmount Decimal       @default(0) @db.Decimal(18,2)
@@ -252,6 +275,7 @@ model FundraisingCampaign {
   officeId    String?
   office      Office?        @relation(fields: [officeId], references: [id])
   donations   Donation[]
+  subscriptions RecurringDonation[]
   approvals   Approval[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -271,11 +295,37 @@ model Donation {
   providerRef String?
   status      DonationStatus @default(PENDING)
   recurring   Boolean        @default(false)
+  subscriptionId String?
+  subscription RecurringDonation? @relation(fields: [subscriptionId], references: [id])
+  retryCount  Int            @default(0)
+  lastRetryAt DateTime?
   complianceNote String?
   campaign    FundraisingCampaign @relation(fields: [campaignId], references: [id])
   payment     PaymentTransaction?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+}
+
+model RecurringDonation {
+  id              String             @id @default(cuid())
+  campaignId      String
+  donorName       String?
+  donorEmail      String?
+  donorPhone      String?
+  donorCountry    String?
+  amount          Decimal            @db.Decimal(18,2)
+  currency        String             @default("USD")
+  gateway         String             @default("mock")
+  interval        RecurringInterval  @default(MONTHLY)
+  status          SubscriptionStatus @default(ACTIVE)
+  nextChargeAt    DateTime
+  failedAttempts  Int                @default(0)
+  lastFailureAt   DateTime?
+  lastFailureReason String?
+  campaign        FundraisingCampaign @relation(fields: [campaignId], references: [id])
+  donations       Donation[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 }
 
 model PaymentTransaction {
@@ -288,6 +338,7 @@ model PaymentTransaction {
   rawStatus   String?
   verified    Boolean  @default(false)
   verifiedAt  DateTime?
+  attempt     Int      @default(1)
   donation    Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 }
@@ -368,19 +419,52 @@ model Event {
   officeId    String?
   office      Office?     @relation(fields: [officeId], references: [id])
   attendees   EventAttendee[]
+  shifts      VolunteerShift[]
+  imageUrl    String?
   createdAt   DateTime    @default(now())
 }
 
 model EventAttendee {
-  id        String   @id @default(cuid())
-  eventId   String
-  name      String
-  phone     String?
-  email     String?
-  qrToken   String   @unique
-  checkedIn Boolean  @default(false)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  phone       String?
+  email       String?
+  qrToken     String   @unique
+  checkedIn   Boolean  @default(false)
+  followUpSent Boolean @default(false)
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model VolunteerShift {
+  id          String     @id @default(cuid())
+  eventId     String
+  title       String
+  role        String     @default("Volunteer")
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  capacity    Int        @default(20)
+  status      ShiftStatus @default(OPEN)
+  event       Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  signups     VolunteerShiftSignup[]
+  createdAt   DateTime   @default(now())
+}
+
+model VolunteerShiftSignup {
+  id              String   @id @default(cuid())
+  shiftId         String
+  volunteerId     String?
+  name            String
+  phone           String?
+  email           String?
+  country         String?
+  reminderConsent Boolean  @default(false)
+  notes           String?
+  shift           VolunteerShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  volunteer       Volunteer?     @relation(fields: [volunteerId], references: [id])
+  createdAt       DateTime @default(now())
 }
 
 model Task {
