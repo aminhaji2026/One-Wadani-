@@ -7,6 +7,12 @@ import Home from './pages/Home';
 import Join from './pages/Join';
 import Donate from './pages/Donate';
 import Polls from './pages/Polls';
+import Campaigns from './pages/Campaigns';
+import CampaignDetailPage from './pages/CampaignDetail';
+import Events from './pages/Events';
+import EventDetail from './pages/EventDetail';
+import TakeAction from './pages/TakeAction';
+import Impact from './pages/Impact';
 import { ModulePage, PeoplePage, AnalyticsPage } from './pages/ModulePage';
 
 function isAuthed() {
@@ -42,6 +48,12 @@ export default function App() {
         <Route path="/join" element={<Join />} />
         <Route path="/donate" element={<Donate />} />
         <Route path="/polls" element={<Polls />} />
+        <Route path="/campaigns" element={<Campaigns />} />
+        <Route path="/campaigns/:slug" element={<CampaignDetailPage />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/events/:id" element={<EventDetail />} />
+        <Route path="/action" element={<TakeAction />} />
+        <Route path="/impact" element={<Impact />} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/console/*" element={<ConsoleRoutes />} />
