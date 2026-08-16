@@ -5,6 +5,7 @@ COPY apps/api/package.json apps/api/package.json
 COPY prisma prisma
 RUN npm install
 COPY apps/api apps/api
+COPY scripts scripts
 RUN npx prisma generate --schema prisma/schema.prisma && npm --workspace apps/api run build
 
 FROM node:22-alpine
@@ -14,5 +15,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/scripts ./scripts
+COPY apps/api/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.prisma && node dist/index.js"]
+CMD ["/docker-entrypoint.sh"]
