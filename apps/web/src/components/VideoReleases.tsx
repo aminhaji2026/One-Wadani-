@@ -1,51 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { WADDANI_FACEBOOK_VIDEOS, type WaddaniVideo } from '../lib/waddaniVideos';
 
-type VideoItem = {
-  id: string;
-  title: string;
-  url: string;
-  language?: string;
-  createdAt?: string;
-};
+type VideoItem = WaddaniVideo;
 
-const FALLBACK: VideoItem[] = [
-  {
-    id: '1',
-    title: 'Waddani Weekly Address — Latest Release',
-    url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-    language: 'so',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Membership Drive Launch',
-    url: 'https://www.youtube.com/watch?v=YE7VzlLtp-4',
-    language: 'so',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Diaspora Town Hall Highlights',
-    url: 'https://www.youtube.com/watch?v=LXb3EKWsInQ',
-    language: 'en',
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: '4',
-    title: 'Youth Wing Campaign Briefing',
-    url: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
-    language: 'so',
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-  },
-  {
-    id: '5',
-    title: 'Fundraising Call to Action',
-    url: 'https://www.youtube.com/watch?v=hY7m5jjJ9mM',
-    language: 'en',
-    createdAt: new Date(Date.now() - 345600000).toISOString(),
-  },
-];
+const FALLBACK: VideoItem[] = WADDANI_FACEBOOK_VIDEOS;
 
 function youtubeId(url: string): string | null {
   try {
@@ -61,9 +20,30 @@ function youtubeId(url: string): string | null {
   return null;
 }
 
+function facebookPermalink(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.includes('facebook.com') && !u.hostname.includes('fb.watch')) return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+function facebookEmbedSrc(url: string): string {
+  const params = new URLSearchParams({
+    href: url,
+    show_text: 'false',
+    width: '560',
+  });
+  return `https://www.facebook.com/plugins/video.php?${params.toString()}`;
+}
+
 function embedSrc(url: string): { kind: 'iframe' | 'video'; src: string } {
   const yt = youtubeId(url);
   if (yt) return { kind: 'iframe', src: `https://www.youtube.com/embed/${yt}` };
+  const fb = facebookPermalink(url);
+  if (fb) return { kind: 'iframe', src: facebookEmbedSrc(fb) };
   if (/vimeo\.com\/(\d+)/.test(url)) {
     const id = url.match(/vimeo\.com\/(\d+)/)?.[1];
     return { kind: 'iframe', src: `https://player.vimeo.com/video/${id}` };
@@ -72,8 +52,9 @@ function embedSrc(url: string): { kind: 'iframe' | 'video'; src: string } {
   return { kind: 'iframe', src: url };
 }
 
-function thumbUrl(url: string): string | null {
-  const yt = youtubeId(url);
+function thumbUrl(item: VideoItem): string | null {
+  if (item.thumbUrl) return item.thumbUrl;
+  const yt = youtubeId(item.url);
   return yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : null;
 }
 
@@ -86,12 +67,19 @@ export default function VideoReleases() {
     api('/public/videos')
       .then((rows: VideoItem[]) => {
         if (Array.isArray(rows) && rows.length) {
-          setVideos(rows);
-          setActiveId(rows[0].id);
+          // Prefer official Facebook catalogue when API still has placeholder YouTube seeds.
+          const onlyPlaceholders = rows.every((r) => /youtube\.com|youtu\.be/i.test(r.url));
+          if (onlyPlaceholders) return;
+          const merged = rows.map((row) => {
+            const match = FALLBACK.find((f) => f.url === row.url || f.id === row.id);
+            return match ? { ...row, thumbUrl: row.thumbUrl || match.thumbUrl } : row;
+          });
+          setVideos(merged);
+          setActiveId(merged[0].id);
         }
       })
       .catch(() => {
-        /* keep fallback videos */
+        /* keep Facebook fallback videos */
       });
   }, []);
 
@@ -111,7 +99,13 @@ export default function VideoReleases() {
       <div className="sectionHead">
         <p className="kicker">Watch</p>
         <h2>Latest video release</h2>
-        <p>Scroll through recent messages, briefings, and campaign films from Waddani.</p>
+        <p>
+          Recent messages and campaign films from the official Waddani Facebook pages (
+          <a href="https://www.facebook.com/WADDANIP" target="_blank" rel="noreferrer">
+            WADDANIP
+          </a>
+          ).
+        </p>
       </div>
 
       <div className="videoFeature">
@@ -121,7 +115,7 @@ export default function VideoReleases() {
               key={active.id}
               src={activeEmbed.src}
               title={active.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           ) : (
@@ -129,12 +123,16 @@ export default function VideoReleases() {
           )}
         </div>
         <div className="videoFeatureMeta">
-          <span className="videoLatestTag">Latest release</span>
+          <span className="videoLatestTag">From Facebook</span>
           <h3>{active.title}</h3>
           <p>
             {active.createdAt ? new Date(active.createdAt).toLocaleDateString() : 'New'}
             {active.language ? ` · ${active.language.toUpperCase()}` : ''}
+            {active.page ? ` · ${active.page}` : ''}
           </p>
+          <a className="videoFacebookLink" href={active.url} target="_blank" rel="noreferrer">
+            Open on Facebook →
+          </a>
         </div>
       </div>
 
@@ -152,7 +150,7 @@ export default function VideoReleases() {
 
       <div className="videoTrack" ref={trackRef}>
         {videos.map((v, i) => {
-          const thumb = thumbUrl(v.url);
+          const thumb = thumbUrl(v);
           const selected = active.id === v.id;
           return (
             <button

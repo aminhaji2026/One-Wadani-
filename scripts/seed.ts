@@ -18,14 +18,22 @@ async function main() {
   await prisma.userRole.upsert({where:{userId_roleId:{userId:admin.id,roleId:superRole.id}},update:{},create:{userId:admin.id,roleId:superRole.id}});
 
   const sampleVideos = [
-    { title: 'Waddani Weekly Address — Latest Release', type: 'video', url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', language: 'so' },
-    { title: 'Membership Drive Launch', type: 'video', url: 'https://www.youtube.com/watch?v=YE7VzlLtp-4', language: 'so' },
-    { title: 'Diaspora Town Hall Highlights', type: 'video', url: 'https://www.youtube.com/watch?v=LXb3EKWsInQ', language: 'en' },
-    { title: 'Youth Wing Campaign Briefing', type: 'video', url: 'https://www.youtube.com/watch?v=ScMzIvxBSi4', language: 'so' },
-    { title: 'Fundraising Call to Action', type: 'video', url: 'https://www.youtube.com/watch?v=hY7m5jjJ9mM', language: 'en' },
+    { title: 'La Hadal Xisbigaaga — Wasiirka Horumarinta Biyaha', type: 'video', url: 'https://www.facebook.com/WADDANIP/videos/wasiirka-horumarinta-biyaha-oo-marti-ku-ah-kulanka-5aad-ee-barnaamijka-la-hadal-/1647657564027375/', language: 'so' },
+    { title: '“Caqabadaha idin haysta ayaad u bedeli kartaan fursad…” — Guddoomiye Xirsi', type: 'video', url: 'https://www.facebook.com/WADDANIP/videos/caqabadaha-idin-haysta-ayaad-u-bedeli-kartaan-fursad-guddoomiye-xirsi/1697516284876762/', language: 'so' },
+    { title: 'Wasiirka Caddaaladda — difaaca dadka nugul', type: 'video', url: 'https://www.facebook.com/WADDANIP/videos/qofka-naafada-ah-ama-iin-kale-leh-qofka-magac-xun-ku-yidhaahda-ciqaab-baa-ka-dha/1095925010056333/', language: 'so' },
+    { title: 'Af-hayeenka WADDANI — Rift Valley Medical College qalin-jebin', type: 'video', url: 'https://www.facebook.com/afhayeenka.waddani/videos/af-hayeenka-xisbiga-waddani-oo-hadalo-qalbiga-taabanaya-u-jeediyey-ardey-ka-qali/857289208367128/', language: 'so' },
+    { title: 'Af-hayeenka WADDANI — xeerka doorashooyinka', type: 'video', url: 'https://www.facebook.com/afhayeenka.waddani/videos/xeerka-doorashooyinka-ee-ummadda-somaliland-indhaha-ku-hayso-wixii-caqabad-ka-yi/1434383903805854/', language: 'so' },
   ];
-  if ((await prisma.mediaAsset.count({ where: { type: 'video' } })) === 0) {
-    for (const [i, video] of sampleVideos.entries()) {
+  // Replace placeholder YouTube seeds with official Waddani Facebook videos.
+  await prisma.mediaAsset.deleteMany({ where: { type: 'video', OR: [{ url: { contains: 'youtube.com' } }, { url: { contains: 'youtu.be' } }] } });
+  for (const [i, video] of sampleVideos.entries()) {
+    const existing = await prisma.mediaAsset.findFirst({ where: { url: video.url } });
+    if (existing) {
+      await prisma.mediaAsset.update({
+        where: { id: existing.id },
+        data: { title: video.title, language: video.language, approved: true, published: true },
+      });
+    } else {
       await prisma.mediaAsset.create({
         data: {
           ...video,
