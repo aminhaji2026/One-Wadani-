@@ -2,6 +2,14 @@
 
 Public party website (Join / Donate / Take action) plus a staff operations console, restyled after democrats.org and labour.org.uk with Waddani orange branding.
 
+## Live deployment (current)
+
+- **Web:** https://web-production-15459.up.railway.app/
+- **API:** https://api-production-e47f.up.railway.app/health
+- **Railway project:** https://railway.com/project/f84ddc97-7d89-431c-b697-3b8893d8155b
+
+This is the canonical release going forward (public homepage + animated events notice board).
+
 Full-stack starter covering 10 integrated modules:
 
 1. Organisation & Worldwide Office Management
