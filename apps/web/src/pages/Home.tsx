@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
+import EventsNoticeBoard from '../components/EventsNoticeBoard';
 import VideoReleases from '../components/VideoReleases';
 
 const news = [
@@ -110,6 +111,8 @@ export default function Home() {
         </Link>
       </section>
 
+      <EventsNoticeBoard />
+
       <VideoReleases />
 
       <section className="section news reveal" id="news">
@@ -127,7 +130,7 @@ export default function Home() {
         </ul>
       </section>
 
-      <section className="joinBand reveal" id="events">
+      <section className="joinBand reveal" id="join">
         <div className="joinBandInner">
           <div>
             <p className="kicker light">Join Waddani</p>
