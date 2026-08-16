@@ -1,11 +1,10 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
 COPY package*.json ./
 COPY apps/web/package.json apps/web/package.json
 RUN npm install
 COPY apps/web apps/web
+# Railway injects VITE_API_URL into the build environment
 RUN npm --workspace apps/web run build
 
 FROM nginx:alpine
